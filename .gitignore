@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+.bun/
+bun.lockb
+/.pnp
+.pnp.js
+
+# Build Outputs
+dist/
+.svelte-kit/
+.output/
+build/
+out
+dist
+
+# Testing
+/coverage
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# WebStorm
+.idea/
+*.iwl
+*.iml
+# Share run configurations
+# !.idea/runConfigurations/
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# OS Specific
+*.pem
+.DS_Store
+Thumbs.db
+
+# Logs & Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+.eslintcache
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Archives and Misc
+**/*.trace
+**/*.zip
+**/*.tar.gz
+**/*.tgz
+**/*.log
+package-lock.json
+**/*.bun
