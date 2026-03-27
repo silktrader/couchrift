@@ -7,9 +7,11 @@
 	"apps/*",
 	"packages/*"
   ],
-  "scripts": {
-	"dev": "bun run dev.ts"
-  },
+	"scripts": {
+		"dev": "bun run dev.ts",
+		"build": "bun run --filter @couchrift/web build",
+		"start": "NODE_ENV=production bun run build && NODE_ENV=production bun run --filter @couchrift/api start"
+	},
   "devDependencies": {
     "@types/bun": "latest"
   },
