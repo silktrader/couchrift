@@ -1,12 +1,13 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+  import './layout.css'
+  import favicon from '$lib/assets/favicon.svg'
 
-	let { children } = $props();
-
+  let { children } = $props()
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+  <link rel="icon" href={favicon}/>
 </svelte:head>
-
-{@render children()}
+<div class="grid place-items-center h-svh w-full py-2 md:py-10">
+  {@render children()}
+</div>

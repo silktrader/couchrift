@@ -6,7 +6,7 @@ import { auth } from './lib/auth'
 const isProd = process.env.NODE_ENV === 'production'
 
 const betterAuth = new Elysia({ name: 'better-auth' })
-  .mount('/auth', auth.handler)
+  .mount(auth.handler)
   .macro({
     auth: {
       async resolve({ status, request: { headers } }) {

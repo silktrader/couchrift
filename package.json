@@ -13,6 +13,7 @@
 		"start": "NODE_ENV=production bun run build && NODE_ENV=production bun run --filter @couchrift/api start"
 	},
   "devDependencies": {
+    "@sinclair/typebox": "^0.34.49",
     "@types/bun": "latest"
   },
   "peerDependencies": {

@@ -26,7 +26,6 @@ export const auth = betterAuth({
       }
     }
   },
-  basePath:         '/api',
   // Add LAN devices to test auth
   trustedOrigins: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.1.102:5173'],
   secret:         process.env.BETTER_AUTH_SECRET,
