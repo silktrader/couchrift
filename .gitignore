@@ -64,3 +64,4 @@ bun-debug.log*
 **/*.log
 package-lock.json
 **/*.bun
+uploads
