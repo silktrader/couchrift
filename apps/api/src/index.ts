@@ -1,30 +1,22 @@
 import { Elysia } from 'elysia'
 import staticPlugin from '@elysiajs/static'
 import path from 'node:path'
-import { auth } from './lib/auth'
+import { betterAuth } from './lib/auth-plugin'
+import { userController } from './user/user.controller'
+import { mkdir } from 'node:fs/promises'
+import { AVATAR_CONFIG } from './user/user.service'
 
 const isProd = process.env.NODE_ENV === 'production'
 
-const betterAuth = new Elysia({ name: 'better-auth' })
-  .mount(auth.handler)
-  .macro({
-    auth: {
-      async resolve({ status, request: { headers } }) {
-        const session = await auth.api.getSession({
-          headers
-        })
-
-        if (!session) return status(401)
-
-        return {
-          user:    session.user,
-          session: session.session
-        }
-      }
-    }
-  })
+// Ensure avatar upload directory exists
+try {
+  await mkdir(AVATAR_CONFIG.uploadDir, { recursive: true })
+} catch (error) {
+  console.error('Failed to create upload directory:', error)
+}
 
 const app = new Elysia()
+  .use(staticPlugin({ assets: './uploads/avatars', prefix: '/uploads/avatars' }))
   .use((app) => {
     if (isProd) {
       // Serve static files from the SvelteKit build directory
@@ -36,6 +28,7 @@ const app = new Elysia()
   })
   .use(betterAuth)
   .group('/api', (app) => app.get('/hello', () => ({ message: 'Hello from API' })))
+  .use(userController)
   .listen(3000)
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'production' : 'development'})`)
