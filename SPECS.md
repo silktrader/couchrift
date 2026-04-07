@@ -1,16 +1,13 @@
 # Specifications
 
-## AI Instruction
-
-### Role & Persona
-
-You are an expert full-stack developer assisting with the "Couch Rift" project. You prioritise clean and concise code, performance, and adherence to modern practices.
-
 ## Overview
 
-“Couch Rift” is a web application that allows multiple users to agree on a film to watch by way of Tinder-like swipes on film covers.
+“Couch Rift” is a web application that allows multiple users to agree on a film to watch by way of Tinder-like swipes on
+film covers.
 
-Hosts create shared sessions ("lounges") and set filters (max runtime, language, excluded genres, earliest release date, etc.). Users join lounges and are then presented with a carousel of random film posters; they swipe left to discard films or right to select the ones they would like to watch.
+Hosts create shared sessions ("lounges") and set filters (max runtime, language, excluded genres, earliest release date,
+etc.). Users join lounges and are then presented with a carousel of random film posters; they swipe left to discard
+films or right to select the ones they would like to watch.
 
 The lounge ends when every participant has liked the same film.
 
@@ -19,6 +16,7 @@ The lounge ends when every participant has liked the same film.
 ### Architecture
 
 Monorepo with Bun's workspaces:
+
 ```
 /apps
   /web     (SvelteKit SPA)
@@ -45,7 +43,8 @@ SQLite was chosen over PostgreSQL, given:
 * the ease of portability and self-hosting
 * the small overhead compared
 
-All swipe inserts and match checks must occur within **transactions** to prevent race conditions when multiple users swipe concurrently.
+All swipe inserts and match checks must occur within **transactions** to prevent race conditions when multiple users
+swipe concurrently.
 
 ### Frontend
 
@@ -56,6 +55,33 @@ All swipe inserts and match checks must occur within **transactions** to prevent
 ### Tooling
 
 - Webstorm (no Prettier)
+
+## Instructions
+
+### Svelte 5
+
+- NEVER use Svelte 4 legacy syntax (no `export let`, no `$:`, no `onMount`).
+- Use runes: `$state()`, `$derived()`, `$effect()`, and `$props()`.
+- Use component props `let { prop1, prop2 } = $props<{ prop1: string }>();`.
+- Use standard HTML attributes (e.g., `onclick={handler}`) instead of `on:click`.
+- Use `{#snippet name()}` for reusable lightweight UI chunks instead of extra components.
+- Keep logic in `.svelte.ts` files using runes for universal reactivity.
+
+### Elysia and Bun
+
+- Always assume Bun. Use `bun add` and `Bun.password`, etc.
+- Use functional chaining with Elysia: `new Elysia().get().post()`.
+- Use Elysia's built-in `t` (TypeBox) for schema validation in the `body` and `query`.
+- Destructure the context in handlers (e.g., `({ body, params, set }) => ...`).
+- Prefer Bun's native methods to Node ones.
+- Use @elysiajs/websocket rather than other libraries.
+
+### Architecture and Style
+
+- SvelteKit handles the frontend/routing; Elysia handles the API.
+- Prefer arrow functions, ternaries, and short-circuiting where it improves readability.
+- Use TypeScript strictly. Avoid `any`. Let Elysia/Svelte infer types where possible.
+- Return object literals result types for business logic and service-level functions.
 
 ## Details
 
@@ -113,7 +139,8 @@ Constraints:
 - `active`: swiping in progress, rules can't be changed
 - `completed`: match found, swiping impossible
 
-Users have at most 45 seconds for each card (can be set in the lounge's settings); it's discarded ("disliked") after that.
+Users have at most 45 seconds for each card (can be set in the lounge's settings); it's discarded ("disliked") after
+that.
 
 The user who created the lounge can interrupt the process when she so desires.
 
@@ -142,6 +169,7 @@ Each swipe must execute in a single transaction:
 ### Match Logic
 
 A film is considered a match if and only if :
+
 - every participant in the lounge swiped that film
 - all swipes are positive (`1`)
 
@@ -161,7 +189,7 @@ Registered users can also:
 
 * create a lounge: `POST /api/lounges`
 * delete a lounge: `DELETE /api/lounges/:loungeId`
-* upload their avatar: `POST /api/users/:userId/avatar`
+* upload their avatar: `POST /api/users/me/avatar`
 
 Anonymous users can sign in and register a new account.
 
