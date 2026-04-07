@@ -1,12 +1,7 @@
 import { customAlphabet } from 'nanoid'
+import { ID_ALPHABETS, ID_LENGTH } from '@couchrift/shared/config/ids'
 
-// noinspection SpellCheckingInspection
-const alphanumeric = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-
-// noinspection SpellCheckingInspection
-const legible = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
-
-export const nanoid8 = customAlphabet(alphanumeric, 8)
-export const nanoid12 = customAlphabet(alphanumeric, 12)
-export const legible5 = customAlphabet(legible, 5)
+export const nanoid8 = customAlphabet(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid8)
+export const nanoid12 = customAlphabet(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid12)
+export const legible5 = customAlphabet(ID_ALPHABETS.legible, ID_LENGTH.legible5)
 

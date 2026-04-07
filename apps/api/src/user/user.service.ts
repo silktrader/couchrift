@@ -1,9 +1,8 @@
 import sharp from 'sharp'
 import { nanoid8 } from '../lib/id'
 import path from 'node:path'
-import { mkdir, unlink } from 'node:fs/promises'
+import { unlink } from 'node:fs/promises'
 import { getUserAvatar, setUserAvatar } from './user.repository'
-import { auth } from '../lib/auth'
 
 // Configuration
 export const AVATAR_CONFIG = {

@@ -5,6 +5,7 @@ import { betterAuth } from './lib/auth-plugin'
 import { userController } from './user/user.controller'
 import { mkdir } from 'node:fs/promises'
 import { AVATAR_CONFIG } from './user/user.service'
+import { loungeController } from './lounge/lounge.controller'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -29,6 +30,7 @@ const app = new Elysia()
   .use(betterAuth)
   .group('/api', (app) => app.get('/hello', () => ({ message: 'Hello from API' })))
   .use(userController)
+  .use(loungeController)
   .listen(3000)
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'production' : 'development'})`)

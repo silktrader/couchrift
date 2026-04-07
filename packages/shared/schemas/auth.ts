@@ -1,7 +1,7 @@
 import { Type, type Static } from '@sinclair/typebox'
 import { AUTH_PWD } from '../config/auth'
 
-const nameString = Type.String({
+export const UserName = Type.String({
   minLength:    3,
   maxLength:    20,
   pattern:      '^[a-zA-ZÀ-ÖØ-öø-ÿ\\s.\\-]+$', // Allows letters, spaces, dots and hyphens
@@ -23,7 +23,7 @@ const passwordString = Type.String({
 })
 
 export const RegisterSchema = Type.Object({
-  name:     nameString,
+  name:     UserName,
   email:    emailString,
   password: passwordString
 })
