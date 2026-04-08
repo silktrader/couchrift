@@ -1,5 +1,5 @@
 import { Type, type Static } from '@sinclair/typebox'
-import { Timestamp, NullableTimestamp, NanoId12, NanoId8, Shortcode, LoungeParticipant } from './primitives.ts'
+import { Timestamp, NullableTimestamp, NanoId12, NanoId8, ShortcodeSchema, LoungeParticipant } from './primitives.ts'
 
 export const LoungeSettingsSchema = Type.Object({
   maxDuration: Type.Integer({ minimum: 20 })
@@ -15,7 +15,7 @@ export const LoungeResponseSchema = Type.Object({
   createdAt:    Timestamp,
   endedAt:      NullableTimestamp,
   startedAt:    NullableTimestamp,
-  shortcode:    Shortcode,
+  shortcode:    ShortcodeSchema,
   settings:     LoungeSettingsSchema,
   participants: Type.Array(LoungeParticipant)
 })

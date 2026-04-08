@@ -1,4 +1,4 @@
-import { Type } from '@sinclair/typebox'
+import { Type, type Static } from '@sinclair/typebox'
 import { ID_LENGTH, ID_ALPHABETS } from '../config/ids.ts'
 import { UserName } from './auth.ts'
 
@@ -24,11 +24,13 @@ export const NanoId12 = Type.String({
   pattern:   alphaRegex(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid12)
 })
 
-export const Shortcode = Type.String({
+export const ShortcodeSchema = Type.String({
   minLength: ID_LENGTH.legible5,
   maxLength: ID_LENGTH.legible5,
   pattern:   alphaRegex(ID_ALPHABETS.legible, ID_LENGTH.legible5)
 })
+
+export type Shortcode = Static<typeof ShortcodeSchema>
 
 export const LoungeParticipant = Type.Object({
   name: UserName,

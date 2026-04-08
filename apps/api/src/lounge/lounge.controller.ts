@@ -7,10 +7,10 @@ export const loungeController = new Elysia()
   .use(betterAuth)
   .post('/api/lounges',
     async ({ user, body, status }) => {
-      const result = createLounge(user.id, user.name, body.settings)
+      const result = createLounge(user.id, body.settings)
 
       if (result.ok)
-        return status(200, result.lounge)
+        return status(200, { shortcode: result.shortcode })
 
       switch (result.error) {
         case 'DB_ERROR':
