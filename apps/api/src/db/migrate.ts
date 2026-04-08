@@ -1,6 +1,5 @@
 import { Database } from 'bun:sqlite'
 import { join } from 'node:path'
-import { readdir } from 'node:fs/promises'
 
 const MIGRATIONS_DIR = join(import.meta.dir, 'migrations')
 
@@ -19,7 +18,9 @@ export const runMigrations = async (db: Database) => {
   )
 
   // Draft a list of unapplied, pending, migrations
-  const pending = (await readdir(MIGRATIONS_DIR)).filter(f => f.endsWith('.sql') && !applied.has(f)).sort()
+  const glob = new Bun.Glob('*.sql')
+  const files = await Array.fromAsync(glob.scan(MIGRATIONS_DIR))
+  const pending = files.filter(f => !applied.has(f)).sort()
 
   if (pending.length === 0) {
     console.log('✓ Database up to date')
@@ -29,10 +30,17 @@ export const runMigrations = async (db: Database) => {
   // Ensure that each successful migration is applied and logged in a single transaction
   for (const filename of pending) {
     const sql = await Bun.file(join(MIGRATIONS_DIR, filename)).text()
-    db.transaction(() => {
-      db.run(sql)
-      db.run('INSERT INTO migrations (filename) VALUES (?)', [filename])
-    })()
-    console.log(`✓ Applied: ${filename}`)
+    const start = performance.now()
+    try {
+      db.transaction(() => {
+        db.run(sql)
+        db.run('INSERT INTO migrations (filename) VALUES (?)', [filename])
+      })()
+      console.log(`✓ Applied: ${filename} (${(performance.now() - start).toFixed(1)}ms)`)
+    } catch (error) {
+      console.error(`✗ Migration failed: ${filename}`)
+      console.error(error)
+      throw error // Re-throw to be caught by the caller
+    }
   }
 }

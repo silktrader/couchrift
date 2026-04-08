@@ -8,7 +8,7 @@ console.log('Initialising database ...')
 // Attempt to read DB path from .env
 const dbPath = process.env.DB_PATH
 if (!dbPath) {
-  console.error('✗ Could not load or create database: edit DB_PATH `.env` file.')
+  console.error('✗ DB_PATH is not set in .env')
   process.exit(1)
 }
 
@@ -23,8 +23,12 @@ db.run('PRAGMA foreign_keys = ON')
 db.run('PRAGMA temp_store = MEMORY') // store temporary structures in memory
 
 // Run migrations
-await runMigrations(db)
-
-console.log('✓ Database initialized at:', dbPath)
+try {
+  await runMigrations(db)
+  console.log('✓ Database initialized at:', dbPath)
+} catch (error) {
+  console.error('✗ Failed to initialize database.')
+  process.exit(1)
+}
 
 export default db
