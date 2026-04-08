@@ -13,7 +13,7 @@
   async function handleCreateLounge() {
     const result = await createLounge({ maxDuration: 300 })
     if (result.ok) {
-      await goto(`/lounges/${result.shortcode}`)
+      await goto(`${result.shortcode}/waiting`)
     } else {
       console.error(result.error)
     }
