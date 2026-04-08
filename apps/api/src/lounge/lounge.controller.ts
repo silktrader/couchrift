@@ -1,16 +1,14 @@
 import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
-import { createLounge } from './lounge.service'
+import { createLounge, getActiveLoungeByCode } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 
 export const loungeController = new Elysia()
   .use(betterAuth)
-  .post('/api/lounges',
-    async ({ user, body, status }) => {
-      const result = createLounge(user.id, body.settings)
+  .post('/api/lounges', async ({ user, body, status }) => {
 
-      if (result.ok)
-        return status(200, { shortcode: result.shortcode })
+      const result = createLounge(user.id, body.settings)
+      if (result.ok) return { shortcode: result.shortcode }
 
       switch (result.error) {
         case 'DB_ERROR':
@@ -23,4 +21,15 @@ export const loungeController = new Elysia()
       auth: true,
       body: LoungeCreateSchema
     }
-  )
+  ).get('/api/lounges/:shortcode', async ({ user, status, params: { shortcode } }) => {
+
+    const result = getActiveLoungeByCode(shortcode, user.id)
+    if (result.ok) return result.lounge
+
+    switch (result.error) {
+      case 'NOT_FOUND':
+        return status(404, { message: 'Lounge not found' })
+    }
+  }, {
+    auth: true
+  })

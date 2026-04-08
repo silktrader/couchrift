@@ -9,6 +9,8 @@ export const LoungeCreateSchema = Type.Object({
   settings: LoungeSettingsSchema
 })
 
+export const LoungeCreateResponseSchema = Type.Object({ shortcode: ShortcodeSchema })
+
 export const LoungeResponseSchema = Type.Object({
   id:           NanoId12,
   creatorId:    NanoId8,
@@ -19,6 +21,7 @@ export const LoungeResponseSchema = Type.Object({
   settings:     LoungeSettingsSchema,
   participants: Type.Array(LoungeParticipant)
 })
-export type LoungeResponse = Static<typeof LoungeResponseSchema>
 
 export type LoungeSettings = Static<typeof LoungeSettingsSchema>
+export type LoungeCreateResponse = Static<typeof LoungeCreateResponseSchema>
+export type LoungeResponse = Static<typeof LoungeResponseSchema>
