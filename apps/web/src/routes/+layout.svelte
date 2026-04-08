@@ -8,6 +8,20 @@
 <svelte:head>
   <link rel="icon" href={favicon}/>
 </svelte:head>
-<div class="grid place-items-center h-svh w-full py-2 md:py-10">
-  {@render children()}
+
+<div class="min-h-svh w-full md:flex md:justify-center md:pt-[15vh] md:pb-[15vh]">
+  <main
+      class="
+        flex flex-col w-full p-4
+        min-h-svh
+        outline-1
+        md:max-w-lg
+        md:min-h-[60vh]
+        md:rounded-3xl
+        md:border-2
+      md:border-neutral-900
+    "
+  >
+    {@render children()}
+  </main>
 </div>
