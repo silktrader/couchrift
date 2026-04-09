@@ -10,6 +10,7 @@
   import { getUserContext } from '$lib/userService.svelte'
   import { createLounge } from '$lib/loungeService.svelte'
   import { flip } from 'svelte/animate'
+  import { formatRelativeTime } from '$lib/dates'
 
   let { data }: PageProps = $props()
 
@@ -69,7 +70,7 @@
           </Item.Media>
           <Item.Content class="flex items-end mr-4">
             <Item.Title class="text-md font-mono font-semibold tracking-wider">{lounge.shortcode}</Item.Title>
-            <Item.Description class="text-sm italic">2 min. ago</Item.Description>
+            <Item.Description class="text-sm italic">{formatRelativeTime(lounge.createdAt)}</Item.Description>
           </Item.Content>
           <Item.Actions>
             <Button size="icon" variant="outline" onclick={async () => await handleLeaveLounge(lounge.id)}>
