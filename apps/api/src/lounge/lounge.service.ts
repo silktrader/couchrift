@@ -1,5 +1,7 @@
 import { nanoid8, legible5 } from '../lib/id'
-import { addLounge, findActiveLoungeByCode, findActiveUserLounges } from './lounge.repository'
+import {
+  addLounge, findActiveLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant
+} from './lounge.repository'
 import { Shortcode } from '@couchrift/shared/schemas/primitives'
 import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 
@@ -62,4 +64,12 @@ export function getActiveUserLounges(userId: string) {
   }
 
   return lounges
+}
+
+export function leaveActiveLounge(targetUserId: string, loungeId: string):
+  { ok: true; deletedLounge: boolean } | { ok: false; error: 'NOT_FOUND' } {
+  const result = deleteActiveLoungeParticipant(targetUserId, targetUserId, loungeId)
+  return result.deletedParticipant ?
+         { ok: true, deletedLounge: result.deletedLounge } :
+         { ok: false, error: 'NOT_FOUND' }
 }

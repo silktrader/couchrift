@@ -1,6 +1,8 @@
 import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
-import { createLounge, getActiveLoungeByCode, getActiveUserLounges } from './lounge.service'
+import {
+  createLounge, getActiveLoungeByCode, getActiveUserLounges, leaveActiveLounge
+} from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 
 export const loungeController = new Elysia()
@@ -37,3 +39,12 @@ export const loungeController = new Elysia()
   }, {
     auth: true
   })
+  .delete('/api/me/lounges/active/:loungeId', async ({ user, status, params: { loungeId } }) => {
+    const result = leaveActiveLounge(user.id, loungeId)
+    if (result.ok) return { deletedLounge: result.deletedLounge }
+
+    switch (result.error) {
+      case 'NOT_FOUND':
+        return status(404, { message: 'Lounge not found' })
+    }
+  }, { auth: true })
