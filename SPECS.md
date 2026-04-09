@@ -13,18 +13,45 @@ The lounge ends when every participant has liked the same film.
 
 ## Tech Stack
 
-### Architecture
+### Repository's Structure
 
-Monorepo with Bun's workspaces:
+This is a **monorepo** with Bun's workspaces.
 
 ```
-/apps
-  /web     (SvelteKit SPA)
-  /api     (Bun + Elysia)
-
-/packages
-  /shared  (types, schemas, contracts)
+├── apps
+│   ├── api
+│   │   ├── data
+│   │   ├── src
+│   │   │   ├── db
+│   │   │   │   └── migrations
+│   │   │   ├── lib
+│   │   │   ├── lounge
+│   │   │   └── user
+│   │   └── test
+│   └── web
+│       ├── src
+│       │   ├── lib
+│       │   │   ├── assets
+│       │   │   ├── components
+│       │   │   │   └── ui
+│       │   │   └── hooks
+│       │   └── routes
+│       │       ├── (registered)
+│       │       │   ├── [shortcode]
+│       │       │   ├── home
+│       │       │   ├── me
+│       │       │   └── welcome
+│       │       └── register
+│       └── static
+└── packages
+    └── shared
+        ├── config
+        └── schemas  
 ```
+
+`apps/web` refers to the SvelteKit SPA.
+`apps/api` contains the Bun + Elysia backend.
+`packages/shared` holds the types, schemas and contracts shared by the API and web client.
 
 All packages are importable via workspace aliases (e.g. @cri/shared)
 
@@ -151,11 +178,6 @@ The user who created the lounge can interrupt the process when she so desires.
 - swipes are submitted via POST requests
 - swipe values are either `1` (like) or `-1` (dislike)
 
-#### Timeout
-
-- swipe timeout is enforced server-side
-- when users don't swipe within the configured time the server inserts a -1 swipe automatically
-
 #### Transaction Requirements
 
 Each swipe must execute in a single transaction:
@@ -173,7 +195,7 @@ A film is considered a match if and only if :
 - every participant in the lounge swiped that film
 - all swipes are positive (`1`)
 
-### API routes
+## API routes
 
 Lounge participants can:
 
@@ -193,15 +215,92 @@ Registered users can also:
 
 Anonymous users can sign in and register a new account.
 
-### WebSocket Events and Payloads
+## WebSocket Events and Payloads
 
 * user joins lounge: user ID
 * user leaves lounge: user ID
 * lounge starts: lounge ID
 * match found: film details
 
-### Authentication
+## Authentication
 
 - managed via BetterAuth
 - uses the `email and password` method
 - newcomers are assigned a user ID on the fly without needing onboarding
+
+## SQLite Schema
+
+```
+create table migrations (
+    filename  TEXT primary key,
+    appliedAt INTEGER default (unixepoch()) not null
+);
+
+create table users (
+    id            TEXT                                 not null primary key,
+    name          TEXT                                 not null,
+    email         TEXT                                 not null unique,
+    emailVerified INTEGER default 0                    not null,
+    image         TEXT,
+    isAnonymous   INTEGER default 0,
+    createdAt     INTEGER default (unixepoch() * 1000) not null,
+    updatedAt     INTEGER default (unixepoch() * 1000) not null
+);
+
+create table accounts (
+    id                    TEXT primary key,
+    userId                TEXT                                 not null references users on delete cascade,
+    accountId             TEXT                                 not null,
+    providerId            TEXT                                 not null,
+    accessToken           TEXT,
+    refreshToken          TEXT,
+    accessTokenExpiresAt  INTEGER,
+    refreshTokenExpiresAt INTEGER,
+    scope                 TEXT,
+    idToken               TEXT,
+    password              TEXT,
+    createdAt             INTEGER default (unixepoch() * 1000) not null,
+    updatedAt             INTEGER default (unixepoch() * 1000) not null
+);
+
+create table lounges (
+    id        TEXT primary key,
+    creatorId TEXT    not null references users,
+    shortcode TEXT    not null,
+    createdAt INTEGER not null,
+    startedAt INTEGER,
+    endedAt   INTEGER,
+    settings  TEXT    not null,
+    constraint json_settings check (json_valid(settings))
+);
+
+create table lounge_participants (
+    loungeId       TEXT not null references lounges,
+    participantId  TEXT not null references users,
+    disconnectedAt INTEGER,
+    primary key (loungeId, participantId)
+) without rowid;
+
+create index idx_lounges_creator on lounges (creatorId);
+
+create table sessions (
+    id        TEXT primary key,
+    userId    TEXT                                 not null references users on delete cascade,
+    token     TEXT                                 not null unique,
+    expiresAt INTEGER                              not null,
+    ipAddress TEXT,
+    userAgent TEXT,
+    createdAt INTEGER default (unixepoch() * 1000) not null,
+    updatedAt INTEGER default (unixepoch() * 1000) not null
+);
+
+create table verifications (
+    id         TEXT primary key,
+    identifier TEXT                                 not null,
+    value      TEXT                                 not null,
+    expiresAt  INTEGER                              not null,
+    createdAt  INTEGER default (unixepoch() * 1000) not null,
+    updatedAt  INTEGER default (unixepoch() * 1000) not null
+);
+
+```
