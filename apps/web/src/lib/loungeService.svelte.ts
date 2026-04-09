@@ -1,23 +1,8 @@
-import type { LoungeSettings, LoungeCreateResponse, LoungeResponse } from '@couchrift/shared/schemas/lounge'
-import { apiPost } from '$lib/apiFetch'
+import type {
+  LoungeSettings, LoungeCreateResponse, LoungeResponse, LeaveLoungeResponse
+} from '@couchrift/shared/schemas/lounge'
+import { apiPost, apiDelete } from '$lib/apiFetch'
 import { createContext } from 'svelte'
-
-export const createLounge = async (
-  settings: LoungeSettings
-): Promise<{ ok: true; shortcode: string } | { ok: false; error: string }> => {
-  const result = await apiPost<LoungeCreateResponse>('lounges', { settings })
-  switch (result.type) {
-    case 'success':
-      return {
-        ok:        true,
-        shortcode: result.data.shortcode
-      }
-    case 'empty':
-      return { ok: false, error: 'Missing data.' }
-    default:
-      return { ok: false, error: result.message }
-  }
-}
 
 export class LoungeService {
   private _lounge: LoungeResponse
@@ -32,3 +17,23 @@ export class LoungeService {
 }
 
 export const [getLoungeContext, setLoungeContext] = createContext<LoungeService>()
+
+export async function createLounge(settings: LoungeSettings):
+  Promise<{ ok: true; shortcode: string } | { ok: false; error: string }> {
+  const result = await apiPost<LoungeCreateResponse>('lounges', { settings })
+  switch (result.type) {
+    case 'success':
+      return {
+        ok:        true,
+        shortcode: result.data.shortcode
+      }
+    case 'empty':
+      return { ok: false, error: 'Missing data.' }
+    default:
+      return { ok: false, error: result.message }
+  }
+}
+
+export async function leaveLounge(loungeId: string) {
+  return await apiDelete<LeaveLoungeResponse>(`me/lounges/active/${loungeId}`)
+}

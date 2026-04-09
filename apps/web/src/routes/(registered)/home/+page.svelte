@@ -8,14 +8,15 @@
   import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut } from '@lucide/svelte'
   import { goto } from '\$app/navigation'
   import { getUserContext } from '$lib/userService.svelte'
-  import { createLounge } from '$lib/loungeService.svelte'
+  import { createLounge, leaveLounge } from '$lib/loungeService.svelte'
   import { flip } from 'svelte/animate'
   import { formatRelativeTime } from '$lib/dates'
+  import { untrack } from 'svelte'
 
   let { data }: PageProps = $props()
 
   const us = getUserContext()
-  const userLounges = $derived(data.lounges)
+  let activeLounges = $state(untrack(() => data.lounges))
 
   async function handleCreateLounge() {
     const result = await createLounge({ maxDuration: 300 })
@@ -27,7 +28,16 @@
   }
 
   async function handleLeaveLounge(loungeId: string) {
-
+    const result = await leaveLounge(loungeId)
+    switch (result.type) {
+      case 'success':
+        activeLounges = activeLounges.filter(lounge => lounge.id !== loungeId)
+        if (result.data.deletedLounge) alert('You were the last participant: lounge deleted.')
+        break
+      default:
+        // tk Improve error handling and display
+        alert('Failed to leave lounge.')
+    }
   }
 
 </script>
@@ -53,7 +63,7 @@
 <section class="flex flex-col flex-1 gap-2 items-center">
   <h4 class="text-muted-foreground">Active Lounges</h4>
   <div class="flex flex-1 overflow-y-auto min-h-0 w-full flex-col items-center gap-2 p-4 pb-8">
-    {#each data.lounges as lounge (lounge.id)}
+    {#each activeLounges as lounge (lounge.id)}
 
       <div class="w-full" animate:flip>
         <Item.Root variant="outline" class="w-full" onclick={() => goto(`/${lounge.shortcode}`)}>
@@ -73,7 +83,12 @@
             <Item.Description class="text-sm italic">{formatRelativeTime(lounge.createdAt)}</Item.Description>
           </Item.Content>
           <Item.Actions>
-            <Button size="icon" variant="outline" onclick={async () => await handleLeaveLounge(lounge.id)}>
+            <Button size="icon" variant="outline"
+                    onclick={async (e) => {
+						          e.stopPropagation()
+                      e.preventDefault()
+						          await handleLeaveLounge(lounge.id)}
+						        }>
               <LogOut/>
             </Button>
           </Item.Actions>
