@@ -4,7 +4,7 @@
   import * as Field from '$lib/components/ui/field/index.js'
   import { goto } from '$app/navigation'
   import { authClient } from '$lib/auth-client'
-  import { RegisterSchema, type Register } from '@couchrift/shared'
+  import { LoginSchema, type Login } from '@couchrift/shared'
   import { LoaderPinwheel, CircleAlert, EyeOff, Eye } from '@lucide/svelte'
   import { Value } from '@sinclair/typebox/value'
   import { Toggle } from '$lib/components/ui/toggle'
@@ -13,12 +13,12 @@
   let httpError = $state('')
   let showPassword = $state(false)
 
-  let form = $state<Register>(Value.Create(RegisterSchema))
-  let errors: Partial<Record<keyof Register, string>> = $state({})
-  let touched = $state(new SvelteSet<keyof Register>())
+  let form = $state<Login>(Value.Create(LoginSchema))
+  let errors: Partial<Record<keyof Login, string>> = $state({})
+  let touched = $state(new SvelteSet<keyof Login>())
 
   let isSubmitting = $state(false)
-  let isValid = $derived(Value.Check(RegisterSchema, form))
+  let isValid = $derived(Value.Check(LoginSchema, form))
   let cantSubmit = $derived(isSubmitting || !isValid)
 
   function validate() {
@@ -29,9 +29,9 @@
     }
 
     // Populate errors
-    let newErrors: Partial<Record<keyof Register, string>> = {}
-    for (const error of Value.Errors(RegisterSchema, form)) {
-      const field = error.path.substring(1) as keyof Register
+    let newErrors: Partial<Record<keyof Login, string>> = {}
+    for (const error of Value.Errors(LoginSchema, form)) {
+      const field = error.path.substring(1) as keyof Login
       // Skip setting error message if the input is untainted
       if (touched.has(field)) newErrors[field] = error.message
     }
@@ -39,7 +39,7 @@
     return false
   }
 
-  function handleBlur(field: keyof Register) {
+  function handleBlur(field: keyof Login) {
     touched.add(field)
     httpError = ''
     validate()
@@ -49,74 +49,52 @@
     e.preventDefault()
     if (!validate()) return
     isSubmitting = true
-    const { error } = await authClient.signUp.email({
-      email:    form.email.trim(),
-      name:     form.name.trim(),
-      password: form.password
+    const { error } = await authClient.signIn.email({
+      email:      form.email,
+      password:   form.password,
+      rememberMe: true
     })
     isSubmitting = false
 
     if (error) {
       switch (error.code) {
-        case 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL':
-          httpError = 'Email already in use'
-          break
         default:
           httpError = error.statusText
       }
       return
     }
 
-    await goto('/welcome', { replaceState: true })
+    await goto('/', { replaceState: true })
   }
 </script>
 
-<div class="flex h-full w-full flex-col items-center lg:w-md px-12">
+<div class="flex flex-1 w-full flex-col px-12 justify-between">
 
   <header class="flex w-full items-center mb-6 text-2xl font-bebas text-red-400/80">
     <!--     <img src="/crimson_couch.png" alt="Couch Rift Logo" class="size-18"/> -->
     <span>Couch<span class="text-yellow-500 font-bold">|</span>Rift</span>
   </header>
 
-  <form onsubmit={handleSubmit} class="flex flex-1 w-full flex-col justify-between">
+  <form onsubmit={handleSubmit} class="flex w-full flex-col justify-center">
 
     <div class="flex flex-col items-center justify-end gap-4 pb-12 text-center">
-      <h1 class="text-xl font-bold">Join the Community</h1>
+      <h1 class="text-xl font-bold">Welcome back!</h1>
       <p class="text-sm text-balance text-muted-foreground">
-        Fill in some basic details to create an account and customise your profile later!
+        Enter your credentials to sign into your account.
       </p>
     </div>
 
     <Field.Group>
-
-      <Field.Field data-invalid={!!errors.name}>
-        <Field.Label>Display Name</Field.Label>
-        <Input
-            id="name"
-            type="text"
-            placeholder="Clint Eastwood"
-            bind:value={form.name}
-            onblur={() => handleBlur('name')}
-            required
-            autocomplete="name"
-        />
-        <Field.Description>The name visible to other users.</Field.Description>
-        <Field.Error class="min-h-5">
-          {#if errors.name}
-            {errors.name}
-          {/if}
-        </Field.Error>
-      </Field.Field>
 
       <Field.Field data-invalid={!!errors.email}>
         <Field.Label>Email</Field.Label>
         <Input
             id="email"
             type="email"
-            placeholder="clint@hollywood.com"
             bind:value={form.email}
             onblur={() => handleBlur('email')}
             required
+            autofocus
             autocomplete="email"
             inputmode="email"
         />
@@ -136,7 +114,7 @@
               bind:value={form.password}
               onblur={() => handleBlur('password')}
               required
-              autocomplete="new-password"
+              autocomplete="current-password"
           />
 
           <Toggle
@@ -169,21 +147,21 @@
       {/if}
     </div>
 
-    <section class="flex flex-1 flex-col gap-6">
+    <section class="flex flex-col gap-6">
       <Button type="submit" disabled={cantSubmit}>
         {#if isSubmitting}
           <span class="flex items-center gap-2">
             <LoaderPinwheel class="size-6 animate-spin"/>
-            Creating Account
+            Signing In
           </span>
         {:else}
-          Create Account
+          Sign In
         {/if}
       </Button>
       <Field.Separator>or</Field.Separator>
-      <Button variant="outline" href="/sign-in">Sign in</Button>
+      <Button variant="outline" href="/register">Register</Button>
     </section>
   </form>
 
-  <section class="flex flex-col text-xs text-muted-foreground italic">© 2026 Silktrader</section>
+  <section class="flex flex-col text-xs text-muted-foreground italic items-center">© 2026 Silktrader</section>
 </div>
