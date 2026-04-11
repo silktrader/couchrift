@@ -1,5 +1,5 @@
-import type { PageLoad } from './$types'
 import { apiGet } from '$lib/apiFetch'
+import type { PageLoad } from './$types'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 
 export const load: PageLoad = async () => {

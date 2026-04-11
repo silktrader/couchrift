@@ -5,7 +5,5 @@ export const load = async () => {
   const session = await authClient.getSession()
 
   if (session.data?.user)
-    throw redirect(302, '/')
-
-  return {}
+    throw redirect(302, '/home')
 }
