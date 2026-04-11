@@ -1,6 +1,6 @@
 import { nanoid8, legible5 } from '../lib/id'
 import {
-  addLounge, findActiveLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant
+  addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant
 } from './lounge.repository'
 import { Shortcode } from '@couchrift/shared/schemas/primitives'
 import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -33,8 +33,9 @@ export function createLounge(userId: string, settings: { maxDuration: number }):
 
 export function getActiveLoungeByCode(shortcode: string, userId: string):
   { ok: true, lounge: LoungeResponse } | { ok: false, error: 'NOT_FOUND' } {
-  const lounge = findActiveLoungeByCode(shortcode, userId)
-  return lounge ? { ok: true, lounge } : { ok: false, error: 'NOT_FOUND' }
+  const lounge = findLoungeByCode(shortcode, userId)
+  if (!lounge) return { ok: false, error: 'NOT_FOUND' }
+  return { ok: true, lounge }
 }
 
 // Get active lounges the user has joined or created.

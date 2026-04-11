@@ -22,12 +22,14 @@ export function addLounge(data: AddLoungeData) {
   tx()
 }
 
-export function findActiveLoungeByCode(shortcode: string, userId: string): LoungeResponse | null {
+// Looks up lounges, active or otherwise, by their shortcode.
+export function findLoungeByCode(shortcode: string, userId: string): LoungeResponse | null {
   const lounge = db.query<{
     id: string
     creatorId: string
     createdAt: number
     startedAt: number
+    endedAt: number
     settings: string
     participants: string
   }, { shortcode: string, userId: string }>(`
@@ -35,6 +37,7 @@ export function findActiveLoungeByCode(shortcode: string, userId: string): Loung
              l.creatorId,
              l.createdAt,
              l.startedAt,
+             l.endedAt,
              l.settings,
              json_group_array(json_object(
                      'id', u.id,
@@ -45,8 +48,7 @@ export function findActiveLoungeByCode(shortcode: string, userId: string): Loung
       FROM lounges l
                LEFT JOIN lounge_participants lp ON lp.loungeId = l.id
                LEFT JOIN users u ON u.id = lp.participantId
-      WHERE l.endedAt IS NULL
-        AND l.shortcode = @shortcode
+      WHERE l.shortcode = @shortcode
       GROUP BY l.id
       HAVING SUM(lp.participantId = @userId) > 0
   `).get({ shortcode, userId })
@@ -56,7 +58,6 @@ export function findActiveLoungeByCode(shortcode: string, userId: string): Loung
   return {
     ...lounge,
     shortcode,
-    endedAt:      null,
     settings:     JSON.parse(lounge.settings),
     participants: (JSON.parse(lounge.participants) as []).filter(Boolean)
   }

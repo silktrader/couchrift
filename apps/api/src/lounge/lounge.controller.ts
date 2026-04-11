@@ -22,15 +22,15 @@ export const loungeController = new Elysia()
     auth: true,
     body: LoungeCreateSchema
   })
-  .get('/api/lounges/:shortcode', async ({ user, status, params: { shortcode } }) => {
-
+  .get('/api/lounges/active/:shortcode', async ({ user, status, params: { shortcode } }) => {
     const result = getActiveLoungeByCode(shortcode, user.id)
-    if (result.ok) return result.lounge
+    if (!result.ok) return status(404)
 
-    switch (result.error) {
-      case 'NOT_FOUND':
-        return status(404, { message: 'Lounge not found' })
-    }
+    // Ensure that the user is a participant
+    const isParticipant = result.lounge.participants.find(part => user.id === part.id)
+    if (!isParticipant) return status(401)
+
+    return result.lounge
   }, {
     auth: true
   })
