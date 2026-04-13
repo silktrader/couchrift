@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
-  createLounge, getActiveLoungeByCode, getActiveUserLounges, leaveActiveLounge
+  createLounge, getActiveLoungeByCode, getActiveUserLounges, leaveActiveLounge, joinLounge
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 
@@ -48,3 +48,17 @@ export const loungeController = new Elysia()
         return status(404, { message: 'Lounge not found' })
     }
   }, { auth: true })
+  .post('/api/lounges/waiting/:shortcode/participants', async ({ user, status, params: { shortcode } }) => {
+
+    const result = joinLounge(user.id, shortcode)
+    if (result.ok) return { joined: result.joined }
+
+    switch (result.error) {
+      case 'NOT_FOUND':
+        return status(404, { message: 'Lounge not found' })
+      case 'STARTED':
+        return status(409, { message: 'Lounge already started' })
+    }
+  }, {
+    auth: true
+  })

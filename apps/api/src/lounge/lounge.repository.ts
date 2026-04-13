@@ -50,7 +50,6 @@ export function findLoungeByCode(shortcode: string, userId: string): LoungeRespo
                LEFT JOIN users u ON u.id = lp.participantId
       WHERE l.shortcode = @shortcode
       GROUP BY l.id
-      HAVING SUM(lp.participantId = @userId) > 0
   `).get({ shortcode, userId })
 
   if (!lounge) return null
@@ -129,5 +128,26 @@ export function deleteActiveLoungeParticipant(requestUserId: string, targetUserI
     `).run({ loungeId })
 
     return { deletedParticipant: true, deletedLounge: loungeResult.changes > 0 }
+  })()
+}
+
+export function upsertLoungeParticipant(userId: string, shortcode: string) {
+  return db.transaction(() => {
+    const lounge = db.query<{ id: string; startedAt: number | null }, { shortcode: string }>(`
+        SELECT id, startedAt
+        FROM lounges
+        WHERE shortcode = @shortcode
+    `).get({ shortcode })
+
+    if (!lounge) return { ok: false, error: 'NOT_FOUND' } as const
+    if (lounge.startedAt !== null) return { ok: false, error: 'STARTED' } as const
+
+    const insert = db.query(`
+        INSERT INTO lounge_participants (loungeId, participantId)
+        VALUES (@loungeId, @userId)
+        ON CONFLICT (loungeId, participantId) DO UPDATE SET disconnectedAt = NULL
+    `).run({ loungeId: lounge.id, userId })
+
+    return { ok: true, loungeId: lounge.id, joined: insert.changes > 0 } as const
   })()
 }

@@ -25,9 +25,9 @@ export const NanoId12 = Type.String({
 })
 
 export const ShortcodeSchema = Type.String({
-  minLength: ID_LENGTH.legible5,
-  maxLength: ID_LENGTH.legible5,
-  pattern:   alphaRegex(ID_ALPHABETS.legible, ID_LENGTH.legible5)
+  minLength: ID_LENGTH.shortcode,
+  maxLength: ID_LENGTH.shortcode,
+  pattern:   alphaRegex(ID_ALPHABETS.shortcode, ID_LENGTH.shortcode)
 })
 
 export type Shortcode = Static<typeof ShortcodeSchema>

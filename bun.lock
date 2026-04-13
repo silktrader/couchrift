@@ -32,7 +32,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@couchrift/shared": "workspace:*",
-        "@lucide/svelte": "^1.7.0",
+        "@lucide/svelte": "^1.8.0",
         "better-auth": "^1.5.6",
         "clsx": "^2.1.1",
         "tailwind-merge": "^3.5.0",
@@ -232,7 +232,7 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@lucide/svelte": ["@lucide/svelte@1.7.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-YytBKOUBGox7yWcykZnYxOkn5WpR5G1qYXLYXV/j1B79SOTTEKzB+s5yF5Rq9l9OkweDStNH2b4yTqfvhEhV8g=="],
+    "@lucide/svelte": ["@lucide/svelte@1.8.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-+zYQUKqEOVP5lxbGmxL1OVgGMQtRK91eIJ0bR+3Cr1ts4oQEsQfxyzzd5X47psJlblAuGFrl2xm4YuATjR9oaA=="],
 
     "@noble/ciphers": ["@noble/ciphers@2.1.1", "", {}, "sha512-bysYuiVfhxNJuldNXlFEitTVdNnYUc+XNJZd7Qm2a5j1vZHgY+fazadNFWFaMK/2vye0JVlxV3gHmC0WDfAOQw=="],
 

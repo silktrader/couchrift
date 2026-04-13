@@ -1,6 +1,6 @@
 import { nanoid8, legible5 } from '../lib/id'
 import {
-  addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant
+  addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant, upsertLoungeParticipant
 } from './lounge.repository'
 import { Shortcode } from '@couchrift/shared/schemas/primitives'
 import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -73,4 +73,10 @@ export function leaveActiveLounge(targetUserId: string, loungeId: string):
   return result.deletedParticipant ?
          { ok: true, deletedLounge: result.deletedLounge } :
          { ok: false, error: 'NOT_FOUND' }
+}
+
+// Allow the specified user to join a lounge that hasn't started yet.
+export function joinLounge(userId: string, shortcode: string):
+  { ok: true, loungeId: string, joined: boolean } | { ok: false, error: 'NOT_FOUND' | 'STARTED' } {
+  return upsertLoungeParticipant(userId, shortcode)
 }
