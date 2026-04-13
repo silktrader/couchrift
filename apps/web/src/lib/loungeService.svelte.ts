@@ -34,6 +34,10 @@ export async function createLounge(settings: LoungeSettings):
   }
 }
 
+export async function joinLounge(shortcode: string) {
+  return await apiPost<{ joined: boolean }>(`lounges/waiting/${shortcode}/participants`)
+}
+
 export async function leaveLounge(loungeId: string) {
   return await apiDelete<LeaveLoungeResponse>(`me/lounges/active/${loungeId}`)
 }

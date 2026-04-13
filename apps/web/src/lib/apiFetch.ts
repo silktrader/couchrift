@@ -73,7 +73,7 @@ async function apiRequest<O>(url: string, method: Method, data?: unknown): Promi
 }
 
 export const apiGet = <T>(url: string) => apiRequest<T>(url, 'GET')
-export const apiPost = <O>(url: string, data: unknown) => apiRequest<O>(url, 'POST', data)
+export const apiPost = <O>(url: string, data?: unknown) => apiRequest<O>(url, 'POST', data)
 export const apiPut = <O>(url: string, data: unknown) => apiRequest<O>(url, 'PUT', data)
 export const apiPatch = <O>(url: string, data: unknown) => apiRequest<O>(url, 'PATCH', data)
 export const apiDelete = <O>(url: string) => apiRequest<O>(url, 'DELETE')

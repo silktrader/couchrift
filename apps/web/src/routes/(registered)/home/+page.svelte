@@ -4,19 +4,23 @@
   import { Separator } from '$lib/components/ui/separator'
   import * as Avatar from '$lib/components/ui/avatar'
   import * as Item from '$lib/components/ui/item'
+  import * as InputOTP from '$lib/components/ui/input-otp'
   import { FieldSeparator } from '$lib/components/ui/field'
   import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut } from '@lucide/svelte'
   import { goto } from '\$app/navigation'
   import { getUserContext } from '$lib/userService.svelte.js'
-  import { createLounge, leaveLounge } from '$lib/loungeService.svelte.js'
+  import { createLounge, leaveLounge, joinLounge } from '$lib/loungeService.svelte.js'
   import { flip } from 'svelte/animate'
   import { formatRelativeTime } from '$lib/dates'
   import { untrack } from 'svelte'
+  import { ID_LENGTH } from '@couchrift/shared/config/ids'
+  import { REGEXP_ONLY_DIGITS_AND_CHARS } from 'bits-ui'
 
   let { data }: PageProps = $props()
 
   const us = getUserContext()
   let activeLounges = $state(untrack(() => data.lounges))
+  let shortcode = $state('')
 
   async function handleCreateLounge() {
     const result = await createLounge({ maxDuration: 300 })
@@ -40,6 +44,10 @@
     }
   }
 
+  async function handleJoinLounge() {
+    const result = await joinLounge(shortcode)
+  }
+
 </script>
 
 <header class="flex w-full flex-row justify-between px-4 pt-2">
@@ -54,7 +62,25 @@
 
 <!-- Main Actions -->
 <section class="flex w-1/2 flex-col justify-center self-center gap-6 my-16 shrink-0">
-  <Button href="/lounges">Enter Lounge</Button>
+
+  <div class="flex flex-col items-center gap-4">
+    <span>Enter a lounge's code:</span>
+    <InputOTP.Root
+        maxlength={ID_LENGTH.shortcode}
+        pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+        bind:value={shortcode}
+        onComplete={handleJoinLounge}
+    >
+      {#snippet children({cells})}
+        <InputOTP.Group class="m-auto">
+          {#each cells as cell (cell)}
+            <InputOTP.Slot {cell}/>
+          {/each}
+        </InputOTP.Group>
+      {/snippet}
+    </InputOTP.Root>
+  </div>
+
   <FieldSeparator>or</FieldSeparator>
   <Button variant="secondary" onclick={async () => await handleCreateLounge()}>Create Lounge</Button>
 </section>
