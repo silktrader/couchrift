@@ -1,12 +1,11 @@
 <script lang="ts">
   import type { PageProps } from './$types'
   import { Button } from '$lib/components/ui/button'
-  import { Separator } from '$lib/components/ui/separator'
   import * as Avatar from '$lib/components/ui/avatar'
   import * as Item from '$lib/components/ui/item'
   import * as InputOTP from '$lib/components/ui/input-otp'
   import { FieldSeparator } from '$lib/components/ui/field'
-  import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut } from '@lucide/svelte'
+  import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut, CircleAlert, X } from '@lucide/svelte'
   import { goto } from '\$app/navigation'
   import { getUserContext } from '$lib/userService.svelte.js'
   import { createLounge, leaveLounge, joinLounge } from '$lib/loungeService.svelte.js'
@@ -21,6 +20,7 @@
   const us = getUserContext()
   let activeLounges = $state(untrack(() => data.lounges))
   let shortcode = $state('')
+  let shortcodeError = $state('Unknown error occurred.')
 
   async function handleCreateLounge() {
     const result = await createLounge({ maxDuration: 300 })
@@ -46,6 +46,19 @@
 
   async function handleJoinLounge() {
     const result = await joinLounge(shortcode)
+    switch (result.type) {
+      case 'success':
+        await goto(`/${shortcode}/waiting`)
+        break
+      case 'clientError':
+        shortcodeError = result.message
+        break
+      case 'networkError':
+        shortcodeError = result.message
+        break
+      default:
+        shortcodeError = 'Unknown error occurred.'
+    }
   }
 
 </script>
@@ -63,23 +76,44 @@
 <!-- Main Actions -->
 <section class="flex w-1/2 flex-col justify-center self-center gap-6 my-16 shrink-0">
 
-  <div class="flex flex-col items-center gap-4">
-    <span>Enter a lounge's code:</span>
-    <InputOTP.Root
-        maxlength={ID_LENGTH.shortcode}
-        pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-        bind:value={shortcode}
-        onComplete={handleJoinLounge}
-    >
-      {#snippet children({cells})}
-        <InputOTP.Group class="m-auto">
-          {#each cells as cell (cell)}
-            <InputOTP.Slot {cell}/>
-          {/each}
-        </InputOTP.Group>
-      {/snippet}
-    </InputOTP.Root>
-  </div>
+  {#if shortcodeError}
+
+    <div class="flex flex-col gap-6 min-h-20 justify-center">
+      <Item.Root variant="outline" size="sm" class="bg-card">
+        <Item.Media variant="icon" class="text-destructive">
+          <CircleAlert/>
+        </Item.Media>
+        <Item.Content class="text-destructive">
+          <Item.Title>{shortcodeError}</Item.Title>
+        </Item.Content>
+        <Item.Actions>
+          <Button size="icon-sm" variant="ghost" onclick={() => shortcodeError = ''}>
+            <X/>
+          </Button>
+        </Item.Actions>
+      </Item.Root>
+    </div>
+
+  {:else}
+
+    <div class="flex flex-col items-center gap-4 min-h-20">
+      <span>Enter a lounge's code:</span>
+      <InputOTP.Root
+          maxlength={ID_LENGTH.shortcode}
+          pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+          bind:value={shortcode}
+          onComplete={handleJoinLounge}
+      >
+        {#snippet children({cells})}
+          <InputOTP.Group class="m-auto">
+            {#each cells as cell (cell)}
+              <InputOTP.Slot {cell}/>
+            {/each}
+          </InputOTP.Group>
+        {/snippet}
+      </InputOTP.Root>
+    </div>
+  {/if}
 
   <FieldSeparator>or</FieldSeparator>
   <Button variant="secondary" onclick={async () => await handleCreateLounge()}>Create Lounge</Button>
