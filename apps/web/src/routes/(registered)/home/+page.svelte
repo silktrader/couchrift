@@ -14,6 +14,7 @@
   import { untrack } from 'svelte'
   import { ID_LENGTH } from '@couchrift/shared/config/ids'
   import { REGEXP_ONLY_DIGITS_AND_CHARS } from 'bits-ui'
+  import { client } from '$lib/et-api'
 
   let { data }: PageProps = $props()
 
@@ -45,20 +46,27 @@
   }
 
   async function handleJoinLounge() {
-    const result = await joinLounge(shortcode)
-    switch (result.type) {
-      case 'success':
-        await goto(`/${shortcode}/waiting`)
+    const { data, error } = await client.api.lounges.waiting({ shortcode }).participants.post()
+
+    if (data) {
+      await goto(`/${shortcode}/waiting`)
+      return
+    }
+
+    switch (error.status) {
+      case 404:
+        shortcodeError = 'Lounge not found.'
         break
-      case 'clientError':
-        shortcodeError = result.message
+      case 409:
+        shortcodeError = 'Lounge already started.'
         break
-      case 'networkError':
-        shortcodeError = result.message
+      case 422:
+        shortcodeError = 'Malformed code.'
         break
       default:
-        shortcodeError = 'Unknown error occurred.'
+        shortcodeError = error.value
     }
+
   }
 
 </script>

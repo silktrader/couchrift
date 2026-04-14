@@ -55,9 +55,9 @@ export const loungeController = new Elysia()
 
     switch (result.error) {
       case 'NOT_FOUND':
-        return status(404, { message: 'Lounge not found' })
+        return status(404)
       case 'STARTED':
-        return status(409, { message: 'Lounge already started' })
+        return status(409)
     }
   }, {
     auth: true
