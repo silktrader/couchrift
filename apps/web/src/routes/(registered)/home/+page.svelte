@@ -15,6 +15,7 @@
   import { ID_LENGTH } from '@couchrift/shared/config/ids'
   import { REGEXP_ONLY_DIGITS_AND_CHARS } from 'bits-ui'
   import { client } from '$lib/et-api'
+  import AppHeader from '$lib/components/layout/app-header.svelte'
 
   let { data }: PageProps = $props()
 
@@ -71,15 +72,7 @@
 
 </script>
 
-<header class="flex w-full flex-row justify-between px-4 pt-2">
-  <h1 class="text-2xl font-bebas text-red-400/80">Couch<span class="text-yellow-500 font-bold">|</span>Rift</h1>
-  <Button variant="ghost" class="rounded-full" size="icon" href="/me">
-    <Avatar.Root class="size-10">
-      <Avatar.Image src={`/uploads/avatars/${us.user.image}`} alt="User Avatar"/>
-      <Avatar.Fallback>{us.user?.name[0]}</Avatar.Fallback>
-    </Avatar.Root>
-  </Button>
-</header>
+<AppHeader user={us.user}/>
 
 <!-- Main Actions -->
 <section class="flex w-1/2 flex-col justify-center self-center gap-6 my-16 shrink-0">
@@ -140,8 +133,10 @@
 
               {#each lounge.participants as participant (participant.id)}
                 <Avatar.Root class={participant.id === lounge.creatorId ? 'size-12' : 'size-10'}>
-                  <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
-                  <Avatar.Fallback>{participant.name[0]}.</Avatar.Fallback>
+                  {#if participant.image}
+                    <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
+                  {/if}
+                  <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
                 </Avatar.Root>
               {/each}
             </div>

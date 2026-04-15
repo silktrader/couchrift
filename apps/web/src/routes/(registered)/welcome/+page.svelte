@@ -3,6 +3,7 @@
   import { CircleCheckBig, ChevronRight } from '@lucide/svelte'
   import * as Item from '$lib/components/ui/item/index.js'
   import { goto } from '$app/navigation'
+  import AppHeader from '$lib/components/layout/app-header.svelte'
 
   const us = getUserContext()
   const isNewUser = Date.now() - new Date(us.user.createdAt).getTime() < 1000 * 60 * 60
@@ -14,9 +15,7 @@
 
   <main class="flex h-full w-full flex-col items-center lg:w-md px-12 gap-6">
 
-    <header class="flex w-full items-center mb-6 text-2xl font-bebas text-red-400/80">
-      <span>Couch<span class="text-yellow-500 font-bold">|</span>Rift</span>
-    </header>
+    <AppHeader user={us.user}/>
 
     <div class="flex flex-col gap-2 items-center">
       <h2 class="font-semibold text-2xl flex items-center gap-2">

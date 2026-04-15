@@ -3,7 +3,7 @@ import type {
 } from '@couchrift/shared/schemas/lounge'
 import { apiPost, apiDelete } from '$lib/apiFetch'
 import { createContext } from 'svelte'
-import { WSClient } from '$lib/WSClient'
+import { WsClient } from '$lib/wsClient'
 import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event.ts'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
@@ -14,11 +14,11 @@ export class LoungeService {
     return this._lounge
   }
 
-  private ws: WSClient<LoungeEventMap>
+  private ws: WsClient<LoungeEventMap>
 
   constructor(lounge: LoungeResponse) {
     this._lounge = $state(lounge)
-    this.ws = new WSClient(`/ws/lounges/${lounge.id}`)
+    this.ws = new WsClient(`/ws/lounges/${lounge.id}`)
     this.registerHandlers()
     this.ws.connect()
   }

@@ -7,6 +7,7 @@
   import { Share2, Copy, RefreshCw, UserX } from '@lucide/svelte'
   import { page } from '$app/state'
   import { getUserContext } from '$lib/userService.svelte'
+  import AppHeader from '$lib/components/layout/app-header.svelte'
 
   const ls = getLoungeContext()
   const us = getUserContext()
@@ -17,18 +18,9 @@
 
 </script>
 
-<!-- Show the waiting interface only when a lounge is found. -->
 <div class="flex h-full w-full flex-col gap-12">
-  <!--    Header-->
-  <header class="flex w-full flex-row justify-between px-4 pt-2">
-    <h1 class="text-2xl font-bebas text-red-400/80">Couch<span class="text-yellow-500 font-bold">|</span>Rift</h1>
-    <Button variant="ghost" class="rounded-full" size="icon" href="/me">
-      <Avatar.Root class="size-10">
-        <Avatar.Image src={`/uploads/avatars/${us.user.image}`} alt="User Avatar"/>
-        <Avatar.Fallback>{us.user?.name[0]}</Avatar.Fallback>
-      </Avatar.Root>
-    </Button>
-  </header>
+
+  <AppHeader user={us.user}/>
 
   <div class="flex w-full max-w-lg flex-col items-center gap-4">
     <span class="text-muted-foreground">Shortcode</span>
@@ -60,8 +52,10 @@
         <Item.Root variant="outline">
           <Item.Media>
             <Avatar.Root class="size-12">
-              <Avatar.Image src={`/uploads/avatars/${participant.image}`}/>
-              <Avatar.Fallback>{participant.name[0]}</Avatar.Fallback>
+              {#if participant.image}
+                <Avatar.Image src={`/uploads/avatars/${participant.image}`}/>
+              {/if}
+              <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}</Avatar.Fallback>
             </Avatar.Root>
           </Item.Media>
           <Item.Content>

@@ -1,7 +1,7 @@
 type Listener<T> = (event: T) => void
 type EventMap = Record<string, { type: string }>
 
-export class WSClient<TMap extends EventMap> {
+export class WsClient<TMap extends EventMap> {
   private ws: WebSocket | null = null
   private listeners = new Map<keyof TMap, Set<Listener<any>>>()
 
