@@ -151,3 +151,13 @@ export function upsertLoungeParticipant(userId: string, shortcode: string) {
     return { ok: true, loungeId: lounge.id, joined: insert.changes > 0 } as const
   })()
 }
+
+export function selectLoungeParticipant(userId: string, loungeId: string) {
+  return db.query<{ id: string, name: string, image: string }, { userId: string, loungeId: string }>(`
+      SELECT u.id, u.name, u.image
+      FROM lounge_participants lp
+               JOIN users u ON u.id = lp.participantId
+      WHERE loungeId = @loungeId
+        AND participantId = @userId
+  `).get({ userId, loungeId })
+}

@@ -32,8 +32,9 @@ export const ShortcodeSchema = Type.String({
 
 export type Shortcode = Static<typeof ShortcodeSchema>
 
-export const LoungeParticipant = Type.Object({
+export const LoungeParticipantSchema = Type.Object({
   name:  UserName,
   id:    NanoId8,
-  image: Type.String()
+  image: Type.Optional(Type.String())
 })
+export type LoungeParticipant = Static<typeof LoungeParticipantSchema>

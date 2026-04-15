@@ -1,6 +1,7 @@
-import { nanoid8, legible5 } from '../lib/id'
+import { legible5, nanoid12 } from '../lib/id'
 import {
-  addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant, upsertLoungeParticipant
+  addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant, upsertLoungeParticipant,
+  selectLoungeParticipant
 } from './lounge.repository'
 import { Shortcode } from '@couchrift/shared/schemas/primitives'
 import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -12,7 +13,7 @@ export function createLounge(userId: string, settings: { maxDuration: number }):
 
   // Generate an ID and timestamp
   const loungeData = {
-    id:        nanoid8(),
+    id:        nanoid12(),
     createdAt: Date.now(),
     creatorId: userId,
     settings:  settings,
@@ -79,4 +80,8 @@ export function leaveActiveLounge(targetUserId: string, loungeId: string):
 export function joinLounge(userId: string, shortcode: string):
   { ok: true, loungeId: string, joined: boolean } | { ok: false, error: 'NOT_FOUND' | 'STARTED' } {
   return upsertLoungeParticipant(userId, shortcode)
+}
+
+export function getLoungeParticipant(userId: string, loungeId: string) {
+  return selectLoungeParticipant(userId, loungeId)
 }

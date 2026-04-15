@@ -4,6 +4,7 @@ import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, leaveActiveLounge, joinLounge
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
+import { broadcastUserJoined, broadcastUserLeft } from './lounge.ws'
 
 export const loungeController = new Elysia()
   .use(betterAuth)
@@ -41,7 +42,10 @@ export const loungeController = new Elysia()
   })
   .delete('/api/me/lounges/active/:loungeId', async ({ user, status, params: { loungeId } }) => {
     const result = leaveActiveLounge(user.id, loungeId)
-    if (result.ok) return { deletedLounge: result.deletedLounge }
+    if (result.ok) {
+      broadcastUserLeft(loungeId, user.id)
+      return { deletedLounge: result.deletedLounge }
+    }
 
     switch (result.error) {
       case 'NOT_FOUND':
@@ -51,7 +55,11 @@ export const loungeController = new Elysia()
   .post('/api/lounges/waiting/:shortcode/participants', async ({ user, status, params: { shortcode } }) => {
 
     const result = joinLounge(user.id, shortcode)
-    if (result.ok) return { joined: result.joined }
+    if (result.ok) {
+      if (result.joined)
+        broadcastUserJoined(result.loungeId, { id: user.id, name: user.name, image: user.image ?? undefined })
+      return { joined: result.joined }
+    }
 
     switch (result.error) {
       case 'NOT_FOUND':
