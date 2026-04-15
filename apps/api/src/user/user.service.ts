@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { nanoid8 } from '../lib/id'
+import { createImageUrl } from '../lib/id'
 import path from 'node:path'
 import { unlink } from 'node:fs/promises'
 import { getUserAvatar, setUserAvatar } from './user.repository'
@@ -22,7 +22,7 @@ export async function addAvatar(file: File, userId: string):
   if (!conversion.ok) return { ok: false, error: 'CONVERSION_ERROR' }
 
   // Generate file name and path
-  const fileName = `${nanoid8()}.webp`
+  const fileName = `${createImageUrl()}.webp`
   const filePath = path.join(AVATAR_CONFIG.uploadDir, fileName)
 
   // Attempt to write the file

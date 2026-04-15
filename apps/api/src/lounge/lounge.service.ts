@@ -1,4 +1,4 @@
-import { legible5, nanoid12 } from '../lib/id'
+import { createShortcode, createLoungeId } from '../lib/id'
 import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant
@@ -13,11 +13,11 @@ export function createLounge(userId: string, settings: { maxDuration: number }):
 
   // Generate an ID and timestamp
   const loungeData = {
-    id:        nanoid12(),
+    id:        createLoungeId(),
     createdAt: Date.now(),
     creatorId: userId,
     settings:  settings,
-    shortcode: legible5()
+    shortcode: createShortcode()
   }
 
   try {

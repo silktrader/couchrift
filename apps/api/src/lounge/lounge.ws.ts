@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { NanoId12, LoungeParticipant } from '@couchrift/shared/schemas/primitives'
+import { LoungeParticipant, LoungeIdSchema } from '@couchrift/shared/schemas/primitives'
 import { betterAuth } from '../lib/auth-plugin'
 import { getLoungeParticipant } from './lounge.service'
 import { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event'
@@ -51,13 +51,11 @@ export function broadcastUserLeft(loungeId: string, userId: string) {
   broadcast(loungeId, { type: 'user_left', user: { id: userId } })
 }
 
-// Elysia WebSocket plugin
-
 export const loungeWsController = new Elysia()
   .use(betterAuth)
   .ws('/ws/lounges/:loungeId', {
 
-    params: t.Object({ loungeId: NanoId12 }),
+    params: t.Object({ loungeId: LoungeIdSchema }),
     auth:   true,
 
     // Connection opened

@@ -5,9 +5,12 @@ import {
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 import { broadcastUserJoined, broadcastUserLeft } from './lounge.ws'
+import { ShortcodeSchema, LoungeIdSchema } from '@couchrift/shared/schemas/primitives'
 
 export const loungeController = new Elysia()
   .use(betterAuth)
+
+  // Create lounge
   .post('/api/lounges', async ({ user, body, status }) => {
 
     const result = createLounge(user.id, body.settings)
@@ -23,6 +26,8 @@ export const loungeController = new Elysia()
     auth: true,
     body: LoungeCreateSchema
   })
+
+  // Fetch lounge data by shortcode
   .get('/api/lounges/active/:shortcode', async ({ user, status, params: { shortcode } }) => {
     const result = getActiveLoungeByCode(shortcode, user.id)
     if (!result.ok) return status(404)
@@ -33,13 +38,18 @@ export const loungeController = new Elysia()
 
     return result.lounge
   }, {
-    auth: true
+    auth:   true,
+    params: t.Object({ shortcode: ShortcodeSchema })
   })
+
+  // Get user's active lounges
   .get('/api/me/lounges/active', async ({ user }) => {
     return { lounges: getActiveUserLounges(user.id) }
   }, {
     auth: true
   })
+
+  // Leave lounge and possibly delete it
   .delete('/api/me/lounges/active/:loungeId', async ({ user, status, params: { loungeId } }) => {
     const result = leaveActiveLounge(user.id, loungeId)
     if (result.ok) {
@@ -49,15 +59,19 @@ export const loungeController = new Elysia()
 
     switch (result.error) {
       case 'NOT_FOUND':
-        return status(404, { message: 'Lounge not found' })
+        return status(404)
     }
-  }, { auth: true })
+  }, {
+    auth:   true,
+    params: t.Object({ loungeId: LoungeIdSchema })
+  })
+
+  // Join lounge
   .post('/api/lounges/waiting/:shortcode/participants', async ({ user, status, params: { shortcode } }) => {
 
     const result = joinLounge(user.id, shortcode)
     if (result.ok) {
-      if (result.joined)
-        broadcastUserJoined(result.loungeId, { id: user.id, name: user.name, image: user.image ?? undefined })
+      if (result.joined) broadcastUserJoined(result.loungeId, user)
       return { joined: result.joined }
     }
 
@@ -68,5 +82,6 @@ export const loungeController = new Elysia()
         return status(409)
     }
   }, {
-    auth: true
+    auth:   true,
+    params: t.Object({ shortcode: ShortcodeSchema })
   })

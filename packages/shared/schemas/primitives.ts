@@ -18,23 +18,23 @@ export const NanoId8 = Type.String({
   pattern:   alphaRegex(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid8)
 })
 
-export const NanoId12 = Type.String({
-  minLength: ID_LENGTH.nanoid12,
-  maxLength: ID_LENGTH.nanoid12,
-  pattern:   alphaRegex(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid12)
-})
-
 export const ShortcodeSchema = Type.String({
   minLength: ID_LENGTH.shortcode,
   maxLength: ID_LENGTH.shortcode,
   pattern:   alphaRegex(ID_ALPHABETS.shortcode, ID_LENGTH.shortcode)
 })
-
 export type Shortcode = Static<typeof ShortcodeSchema>
+
+export const LoungeIdSchema = Type.String({
+  minLength: ID_LENGTH.nanoid12,
+  maxLength: ID_LENGTH.nanoid12,
+  pattern:   alphaRegex(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid12)
+})
+export type LoungeId = Static<typeof LoungeIdSchema>
 
 export const LoungeParticipantSchema = Type.Object({
   name:  UserName,
   id:    NanoId8,
-  image: Type.Optional(Type.String())
+  image: Type.Optional(Type.Union([Type.String(), Type.Null(), Type.Undefined()]))
 })
 export type LoungeParticipant = Static<typeof LoungeParticipantSchema>

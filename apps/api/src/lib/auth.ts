@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { AUTH_PWD } from '@couchrift/shared'
 import db from '../db'
-import { nanoid8 } from './id'
+import { createUserId } from './id'
 
 export const auth = betterAuth({
   database:         db,
@@ -19,7 +19,7 @@ export const auth = betterAuth({
       generateId: (options) => {
         // Generate custom short user IDs with Nanoid
         if (options.model === 'user' || options.model === 'users') {
-          return nanoid8()
+          return createUserId()
         }
         // Let database auto-generate by default
         return false
