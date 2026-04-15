@@ -3,6 +3,10 @@ import type {
 } from '@couchrift/shared/schemas/lounge'
 import { apiPost, apiDelete } from '$lib/apiFetch'
 import { createContext } from 'svelte'
+import { WSClient } from '$lib/WSClient'
+import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event.ts'
+
+type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
 export class LoungeService {
   private _lounge: LoungeResponse
@@ -10,10 +14,37 @@ export class LoungeService {
     return this._lounge
   }
 
+  private ws: WSClient<LoungeEventMap>
+
   constructor(lounge: LoungeResponse) {
     this._lounge = $state(lounge)
+    this.ws = new WSClient(`/ws/lounges/${lounge.id}`)
+    this.registerHandlers()
+    this.ws.connect()
   }
 
+  destroy() {
+    this.ws.disconnect()
+  }
+
+  private registerHandlers() {
+    this.ws.on('user_joined', (event) => {
+      console.log('update')
+      this._lounge = {
+        ...this._lounge,
+        participants: [...this._lounge.participants, event.user]
+      }
+    })
+
+    this.ws.on('user_left', (event) => {
+      this._lounge = {
+        ...this._lounge,
+        participants: this._lounge.participants.filter(
+          p => p.id !== event.user.id
+        )
+      }
+    })
+  }
 }
 
 export const [getLoungeContext, setLoungeContext] = createContext<LoungeService>()

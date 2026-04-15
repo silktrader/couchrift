@@ -21,7 +21,7 @@
   const us = getUserContext()
   let activeLounges = $state(untrack(() => data.lounges))
   let shortcode = $state('')
-  let shortcodeError = $state('Unknown error occurred.')
+  let shortcodeError = $state('')
 
   async function handleCreateLounge() {
     const result = await createLounge({ maxDuration: 300 })

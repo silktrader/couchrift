@@ -56,31 +56,29 @@
   <div class="flex w-full max-w-lg flex-1 flex-col items-center gap-4">
     <h3 class="text-muted-foreground">Participants</h3>
     <div class="flex w-full flex-col justify-center gap-6">
-      <!--{#each participants as participant (participant.id)}-->
-      <!--  <Item.Root variant="outline">-->
-      <!--    <Item.Media>-->
-      <!--      <Avatar.Root class="size-12">-->
-      <!--        <Avatar.Image src={`/uploads/avatars/${participant.image}`}/>-->
-      <!--        <Avatar.Fallback>{participant.name[0]}</Avatar.Fallback>-->
-      <!--      </Avatar.Root>-->
-      <!--    </Item.Media>-->
-      <!--    <Item.Content>-->
-      <!--      {#if participant.id === user.id}-->
-      <!--        <Item.Title class="font-semibold">You</Item.Title>-->
-      <!--      {:else}-->
-      <!--        <Item.Title class="font-semibold">{participant.name}</Item.Title>-->
-      <!--        <Item.Description class="italic"-->
-      <!--        >{participant.disconnectedAt ? participant.disconnectedAt : 'online'}</Item.Description-->
-      <!--        >-->
-      <!--      {/if}-->
-      <!--    </Item.Content>-->
-      <!--    <Item.Actions>-->
-      <!--      <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Kick Out">-->
-      <!--        <UserX/>-->
-      <!--      </Button>-->
-      <!--    </Item.Actions>-->
-      <!--  </Item.Root>-->
-      <!--{/each}-->
+      {#each participants as participant (participant.id)}
+        <Item.Root variant="outline">
+          <Item.Media>
+            <Avatar.Root class="size-12">
+              <Avatar.Image src={`/uploads/avatars/${participant.image}`}/>
+              <Avatar.Fallback>{participant.name[0]}</Avatar.Fallback>
+            </Avatar.Root>
+          </Item.Media>
+          <Item.Content>
+            {#if participant.id === user.id}
+              <Item.Title class="font-semibold">You</Item.Title>
+            {:else}
+              <Item.Title class="font-semibold">{participant.name}</Item.Title>
+              <Item.Description class="italic">online</Item.Description>
+            {/if}
+          </Item.Content>
+          <Item.Actions>
+            <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Kick Out">
+              <UserX/>
+            </Button>
+          </Item.Actions>
+        </Item.Root>
+      {/each}
     </div>
   </div>
 
