@@ -1,20 +1,40 @@
 <script lang="ts">
-  import { getLoungeContext } from '$lib/loungeService.svelte.js'
+  import { getLoungeContext, leaveLounge } from '$lib/loungeService.svelte.js'
   import { Button } from '$lib/components/ui/button'
   import * as Item from '$lib/components/ui/item'
   import * as Card from '$lib/components/ui/card'
   import * as Avatar from '$lib/components/ui/avatar'
-  import { Share2, Copy, RefreshCw, UserX } from '@lucide/svelte'
-  import { page } from '$app/state'
+  import { Share2, Copy, RefreshCw, UserX, LogOut } from '@lucide/svelte'
   import { getUserContext } from '$lib/userService.svelte'
   import AppHeader from '$lib/components/layout/app-header.svelte'
+  import { goto } from '\$app/navigation'
 
   const ls = getLoungeContext()
   const us = getUserContext()
 
-  let shortcode = $derived(page.params.shortcode)
   let participants = $derived(ls.lounge?.participants ?? [])
-  let user = $derived(us.user!)
+  let isCreator = $derived(ls.lounge.creatorId === us.user.id)
+
+  async function handleLeaveLounge() {
+    const result = await leaveLounge(ls.lounge.id, us.user.id)
+
+    if (result.ok) {
+      await goto('/home')
+    } else {
+      alert(result.error)
+    }
+  }
+
+  async function handleKickUser(userId: string, userName: string) {
+
+    const result = await leaveLounge(ls.lounge.id, userId)
+
+    if (result.ok) {
+      alert('Kicked ' + userName)
+    } else {
+      alert(result.error)
+    }
+  }
 
 </script>
 
@@ -49,6 +69,7 @@
     <h3 class="text-muted-foreground">Participants</h3>
     <div class="flex w-full flex-col justify-center gap-6">
       {#each participants as participant (participant.id)}
+        {@const isUser = participant.id === us.user.id}
         <Item.Root variant="outline">
           <Item.Media>
             <Avatar.Root class="size-12">
@@ -59,7 +80,7 @@
             </Avatar.Root>
           </Item.Media>
           <Item.Content>
-            {#if participant.id === user.id}
+            {#if isUser}
               <Item.Title class="font-semibold">You</Item.Title>
             {:else}
               <Item.Title class="font-semibold">{participant.name}</Item.Title>
@@ -67,18 +88,26 @@
             {/if}
           </Item.Content>
           <Item.Actions>
-            <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Kick Out">
-              <UserX/>
-            </Button>
+            {#if isUser && !isCreator}
+              <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Leave"
+                      onclick={() => handleLeaveLounge()}>
+                <LogOut/>
+              </Button>
+            {:else if !isUser && isCreator}
+              <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Kick User Out" onclick={() =>
+               handleKickUser(participant.id, participant.name)}>
+                <UserX/>
+              </Button>
+            {/if}
           </Item.Actions>
         </Item.Root>
       {/each}
     </div>
   </div>
 
-  {#if ls.lounge.creatorId === user.id}
+  {#if isCreator}
     <div class="flex items-center justify-center gap-6">
-      <!--         <Button size="lg" onclick={() => ls.startLounge()}>Start</Button> -->
+      <Button size="lg">Start</Button>
       <Button size="lg" variant="destructive">Delete</Button>
     </div>
   {/if}

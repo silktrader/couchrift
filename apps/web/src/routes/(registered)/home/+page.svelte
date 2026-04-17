@@ -34,15 +34,13 @@
   }
 
   async function handleLeaveLounge(loungeId: string) {
-    const result = await leaveLounge(loungeId)
-    switch (result.type) {
-      case 'success':
-        activeLounges = activeLounges.filter(lounge => lounge.id !== loungeId)
-        if (result.data.deletedLounge) alert('You were the last participant: lounge deleted.')
-        break
-      default:
-        // tk Improve error handling and display
-        alert('Failed to leave lounge.')
+    const result = await leaveLounge(loungeId, us.user.id)
+
+    if (result.ok) {
+      activeLounges = activeLounges.filter(lounge => lounge.id !== loungeId)
+      alert('You left the lounge.')
+    } else {
+      alert(result.error)
     }
   }
 
@@ -65,9 +63,8 @@
         shortcodeError = 'Malformed code.'
         break
       default:
-        shortcodeError = error.value
+        shortcodeError = 'Unknown error occurred.'
     }
-
   }
 
 </script>

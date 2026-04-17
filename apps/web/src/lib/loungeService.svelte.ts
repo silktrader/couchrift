@@ -1,10 +1,11 @@
 import type {
   LoungeSettings, LoungeCreateResponse, LoungeResponse, LeaveLoungeResponse
 } from '@couchrift/shared/schemas/lounge'
-import { apiPost, apiDelete } from '$lib/apiFetch'
+import { apiPost } from '$lib/apiFetch'
 import { createContext } from 'svelte'
 import { WsClient } from '$lib/wsClient'
 import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event.ts'
+import { client } from '$lib/et-api'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
@@ -69,6 +70,28 @@ export async function joinLounge(shortcode: string) {
   return await apiPost<{ joined: boolean }>(`lounges/waiting/${shortcode}/participants`)
 }
 
-export async function leaveLounge(loungeId: string) {
-  return await apiDelete<LeaveLoungeResponse>(`me/lounges/active/${loungeId}`)
+export async function leaveLounge(loungeId: string, participantId: string):
+  Promise<{ ok: true } | { ok: false, error: string }> {
+  const { error } = await client.api.lounges({ loungeId }).participants({ participantId }).delete()
+
+  if (!error) return { ok: true }
+
+  const fail = (message: string) => ({ ok: false, error: message })
+
+  switch (error.value.type) {
+    case 'validation':
+      return fail('Wrong lounge or user ID.')
+    case 'PARTICIPANT_NOT_FOUND':
+      return fail('Wrong user ID provided.')
+    case 'UNAUTHORIZED':
+      return fail('You are unauthorized.')
+    case 'LOUNGE_NOT_FOUND':
+      return fail('Lounge not found.')
+    case 'LOUNGE_ENDED':
+      return fail('You can\'t leave a lounge that has ended.')
+    case 'CREATOR_CANT_LEAVE':
+      return fail('You can\'t leave a lounge that you started. Delete it, instead.')
+    case 'CANT_KICK_USER':
+      return fail('You can\'t kick the user.')
+  }
 }
