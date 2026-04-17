@@ -68,12 +68,8 @@ export function getActiveUserLounges(userId: string) {
   return lounges
 }
 
-export function leaveActiveLounge(targetUserId: string, loungeId: string):
-  { ok: true; deletedLounge: boolean } | { ok: false; error: 'NOT_FOUND' } {
-  const result = deleteActiveLoungeParticipant(targetUserId, targetUserId, loungeId)
-  return result.deletedParticipant ?
-         { ok: true, deletedLounge: result.deletedLounge } :
-         { ok: false, error: 'NOT_FOUND' }
+export function removeActiveLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
+  return deleteActiveLoungeParticipant(participantId, requesterId, loungeId)
 }
 
 // Allow the specified user to join a lounge that hasn't started yet.

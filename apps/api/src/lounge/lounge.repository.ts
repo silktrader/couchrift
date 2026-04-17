@@ -93,41 +93,39 @@ export function findActiveUserLounges(userId: string) {
   `).all({ userId })
 }
 
-export function deleteActiveLoungeParticipant(requestUserId: string, targetUserId: string, loungeId: string): {
-  deletedParticipant: boolean,
-  deletedLounge: boolean
-} {
+export function deleteActiveLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
   // Wrap queries in a transaction to avoid race conditions between multiple requests.
   return db.transaction(() => {
 
-    // Look for the participant entry and delete it if present.
-    // It's impossible to delete participants in ended lounges.
-    // Only the lounge creator can kick users from active lounges.
-    const participantResult = db.query(`
-        DELETE
-        FROM lounge_participants
-        WHERE participantId = @targetUserId
-          AND loungeId = @loungeId
-          AND EXISTS (SELECT 1
-                      FROM lounges
-                      WHERE id = @loungeId
-                        AND endedAt IS NULL
-                        AND (@requestUserId = @targetUserId OR creatorId = @requestUserId))
-    `).run({ requestUserId, targetUserId, loungeId })
+    // Perform checks:
+    // - lounge exists
+    // - lounge hasn't ended
+    // - target user isn't the creator
 
-    // Return a negative result to be handled by the service
-    if (participantResult.changes === 0) return { deletedParticipant: false, deletedLounge: false }
-
-    // Check whether the lounge needs to be deleted; the 'ended_at' null check is redundant but safe
-    const loungeResult = db.query(`
-        DELETE
+    const lounge = db.query<{ creatorId: string, endedAt: number | null }, { loungeId: string }>(`
+        SELECT creatorId, endedAt
         FROM lounges
         WHERE id = @loungeId
-          AND endedAt IS NULL
-          AND NOT EXISTS (SELECT 1 FROM lounge_participants WHERE loungeId = @loungeId)
-    `).run({ loungeId })
+    `).get({ loungeId })
 
-    return { deletedParticipant: true, deletedLounge: loungeResult.changes > 0 }
+    if (lounge === null) return { ok: false, error: 'LOUNGE_NOT_FOUND' } as const
+    if (lounge.endedAt !== null) return { ok: false, error: 'LOUNGE_ENDED' } as const
+    if (lounge.creatorId === participantId) return { ok: false, error: 'CREATOR_CANT_LEAVE' } as const
+    if (participantId !== requesterId && requesterId !== lounge.creatorId)
+      return { ok: false, error: 'CANT_KICK_USER' } as const
+
+    // Look for the participant entry and delete it if present.
+    const { changes } = db.query(`
+        DELETE
+        FROM lounge_participants
+        WHERE participantId = @participantId
+          AND loungeId = @loungeId
+    `).run({ participantId, loungeId })
+
+    // Return a negative result to be handled by the service
+    if (changes === 0) return { ok: false, error: 'PARTICIPANT_NOT_FOUND' } as const
+
+    return { ok: true } as const
   })()
 }
 

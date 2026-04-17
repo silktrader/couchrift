@@ -1,11 +1,12 @@
 import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
-  createLounge, getActiveLoungeByCode, getActiveUserLounges, leaveActiveLounge, joinLounge
+  createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
+  removeActiveLoungeParticipant
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 import { broadcastUserJoined, broadcastUserLeft } from './lounge.ws'
-import { ShortcodeSchema, LoungeIdSchema } from '@couchrift/shared/schemas/primitives'
+import { ShortcodeSchema, LoungeIdSchema, UserIdSchema } from '@couchrift/shared/schemas/primitives'
 
 export const loungeController = new Elysia()
   .use(betterAuth)
@@ -49,22 +50,32 @@ export const loungeController = new Elysia()
     auth: true
   })
 
-  // Leave lounge and possibly delete it
-  .delete('/api/me/lounges/active/:loungeId', async ({ user, status, params: { loungeId } }) => {
-    const result = leaveActiveLounge(user.id, loungeId)
-    if (result.ok) {
-      broadcastUserLeft(loungeId, user.id)
-      return { deletedLounge: result.deletedLounge }
-    }
+  // Remove participant from lounge either by KICKING or voluntary LEAVING
+  .delete('/api/lounges/:loungeId/participants/:participantId',
+    async ({ user, status, params: { loungeId, participantId } }) => {
+      const result = removeActiveLoungeParticipant(participantId, user.id, loungeId)
+      if (result.ok) {
+        broadcastUserLeft(loungeId, participantId)
+        return status(204)
+      }
 
-    switch (result.error) {
-      case 'NOT_FOUND':
-        return status(404)
-    }
-  }, {
-    auth:   true,
-    params: t.Object({ loungeId: LoungeIdSchema })
-  })
+      switch (result.error) {
+        case 'LOUNGE_NOT_FOUND':
+          return status(404, { type: result.error })
+        case 'LOUNGE_ENDED':
+          return status(409, { type: result.error })
+        case 'CREATOR_CANT_LEAVE':
+          return status(403, { type: result.error })
+        case 'CANT_KICK_USER':
+          return status(403, { type: result.error })
+        case 'PARTICIPANT_NOT_FOUND':
+          return status(404, { type: result.error })
+      }
+    },
+    {
+      auth:   true,
+      params: t.Object({ loungeId: LoungeIdSchema, participantId: UserIdSchema })
+    })
 
   // Join lounge
   .post('/api/lounges/waiting/:shortcode/participants', async ({ user, status, params: { shortcode } }) => {

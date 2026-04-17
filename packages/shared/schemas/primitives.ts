@@ -12,7 +12,7 @@ export const NullableTimestamp = Type.Union([Timestamp, Type.Null()])
 const alphaRegex = (alphabet: string, length: number) =>
   `^[${alphabet}]{${length}}$`
 
-export const NanoId8 = Type.String({
+export const UserIdSchema = Type.String({
   minLength: ID_LENGTH.nanoid8,
   maxLength: ID_LENGTH.nanoid8,
   pattern:   alphaRegex(ID_ALPHABETS.alphanumeric, ID_LENGTH.nanoid8)
@@ -34,7 +34,7 @@ export type LoungeId = Static<typeof LoungeIdSchema>
 
 export const LoungeParticipantSchema = Type.Object({
   name:  UserName,
-  id:    NanoId8,
+  id:    UserIdSchema,
   image: Type.Optional(Type.Union([Type.String(), Type.Null(), Type.Undefined()]))
 })
 export type LoungeParticipant = Static<typeof LoungeParticipantSchema>
