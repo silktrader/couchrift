@@ -1,6 +1,6 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
-  addLounge, findLoungeByCode, findActiveUserLounges, deleteActiveLoungeParticipant, upsertLoungeParticipant,
+  addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant
 } from './lounge.repository'
 import { Shortcode } from '@couchrift/shared/schemas/primitives'
@@ -68,8 +68,8 @@ export function getActiveUserLounges(userId: string) {
   return lounges
 }
 
-export function removeActiveLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
-  return deleteActiveLoungeParticipant(participantId, requesterId, loungeId)
+export function removeLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
+  return deleteLoungeParticipant(participantId, requesterId, loungeId)
 }
 
 // Allow the specified user to join a lounge that hasn't started yet.

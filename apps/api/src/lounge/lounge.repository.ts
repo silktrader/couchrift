@@ -1,6 +1,7 @@
 import db from '../db'
 import { AddLoungeData } from './lounge.models'
 import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
+import { fail, succeed } from '@couchrift/shared/utilities'
 
 export function addLounge(data: AddLoungeData) {
   const tx = db.transaction(() => {
@@ -93,7 +94,7 @@ export function findActiveUserLounges(userId: string) {
   `).all({ userId })
 }
 
-export function deleteActiveLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
+export function deleteLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
   // Wrap queries in a transaction to avoid race conditions between multiple requests.
   return db.transaction(() => {
 
@@ -108,11 +109,17 @@ export function deleteActiveLoungeParticipant(participantId: string, requesterId
         WHERE id = @loungeId
     `).get({ loungeId })
 
-    if (lounge === null) return { ok: false, error: 'LOUNGE_NOT_FOUND' } as const
-    if (lounge.endedAt !== null) return { ok: false, error: 'LOUNGE_ENDED' } as const
-    if (lounge.creatorId === participantId) return { ok: false, error: 'CREATOR_CANT_LEAVE' } as const
-    if (participantId !== requesterId && requesterId !== lounge.creatorId)
-      return { ok: false, error: 'CANT_KICK_USER' } as const
+    if (lounge === null) return fail('LOUNGE_NOT_FOUND')
+    if (lounge.endedAt !== null) return fail('LOUNGE_ENDED')
+    if (lounge.creatorId === participantId) return fail('CREATOR_CANT_LEAVE')
+    if (participantId !== requesterId && requesterId !== lounge.creatorId) return fail('CANT_KICK_USER')
+
+    // Check user existence and cache user data
+    const user = db.query<{ name: string }, { participantId: string }>(`
+        SELECT name
+        FROM users
+        WHERE id = @participantId`).get({ participantId })
+    if (!user) return fail('PARTICIPANT_NOT_FOUND')
 
     // Look for the participant entry and delete it if present.
     const { changes } = db.query(`
@@ -123,9 +130,9 @@ export function deleteActiveLoungeParticipant(participantId: string, requesterId
     `).run({ participantId, loungeId })
 
     // Return a negative result to be handled by the service
-    if (changes === 0) return { ok: false, error: 'PARTICIPANT_NOT_FOUND' } as const
+    if (changes === 0) return fail('PARTICIPANT_NOT_FOUND')
 
-    return { ok: true } as const
+    return succeed({ user: { ...user, id: participantId } })
   })()
 }
 

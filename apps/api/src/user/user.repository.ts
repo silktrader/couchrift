@@ -1,5 +1,4 @@
 import db from '../db'
-import { t } from 'elysia'
 
 export function getUserAvatar(userId: string): string | undefined {
   const avatar = db.query(`

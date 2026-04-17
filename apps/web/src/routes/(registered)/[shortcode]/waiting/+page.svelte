@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getLoungeContext, leaveLounge } from '$lib/loungeService.svelte.js'
+  import { getLoungeContext, leaveLounge, kickUser } from '$lib/loungeService.svelte.js'
   import { Button } from '$lib/components/ui/button'
   import * as Item from '$lib/components/ui/item'
   import * as Card from '$lib/components/ui/card'
@@ -8,6 +8,7 @@
   import { getUserContext } from '$lib/userService.svelte'
   import AppHeader from '$lib/components/layout/app-header.svelte'
   import { goto } from '\$app/navigation'
+  import { toast } from 'svelte-sonner'
 
   const ls = getLoungeContext()
   const us = getUserContext()
@@ -16,34 +17,39 @@
   let isCreator = $derived(ls.lounge.creatorId === us.user.id)
 
   $effect(() => {
-    const unsubscribe = ls.onEvent((event) => {
-      if (event.type === 'user_left' && event.user.id === us.user.id) {
-        alert('You were removed from the lounge.')
-        goto('/home')
+    const subscriptions: (() => void)[] = []
+
+    const meRemoved = ls.onEvent((event) => {
+      if (event.type === 'user_removed') {
+        if (event.user.id === us.user.id) {
+          toast.warning(`You were removed from lounge #${ls.lounge.shortcode}.`)
+          goto('/home')
+        } else {
+          toast.info(`${event.user.name} was removed from the lounge.`)
+        }
       }
     })
+    subscriptions.push(meRemoved)
 
-    return () => unsubscribe()
+    return () => subscriptions.forEach((unsub) => unsub())
   })
 
   async function handleLeaveLounge() {
     const result = await leaveLounge(ls.lounge.id, us.user.id)
-
     if (result.ok) {
+      toast.success(`You left lounge #${ls.lounge.shortcode}.`)
       await goto('/home')
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
   }
 
   async function handleKickUser(userId: string, userName: string) {
-
-    const result = await leaveLounge(ls.lounge.id, userId)
-
+    const result = await kickUser(ls.lounge.id, userId)
     if (result.ok) {
-      alert('Kicked ' + userName)
+      toast.success(`You removed ${userName} from the lounge. Good riddance!`)
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
   }
 

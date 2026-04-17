@@ -6,6 +6,7 @@ import { createContext } from 'svelte'
 import { WsClient } from '$lib/wsClient'
 import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event.ts'
 import { client } from '$lib/et-api'
+import { fail, succeed } from '@couchrift/shared/utilities'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
@@ -32,9 +33,15 @@ export class LoungeService {
     this.ws.disconnect()
   }
 
+  private removeParticipant(userId: string) {
+    this._lounge = {
+      ...this._lounge,
+      participants: this._lounge.participants.filter(p => p.id !== userId)
+    }
+  }
+
   private registerHandlers() {
     this.ws.on('user_joined', (event) => {
-      console.log('update')
       this._lounge = {
         ...this._lounge,
         participants: [...this._lounge.participants, event.user]
@@ -43,16 +50,17 @@ export class LoungeService {
     })
 
     this.ws.on('user_left', (event) => {
-      this._lounge = {
-        ...this._lounge,
-        participants: this._lounge.participants.filter(
-          p => p.id !== event.user.id
-        )
-      }
+      this.removeParticipant(event.user.id)
+      this.emit(event)
+    })
+
+    this.ws.on('user_removed', (event) => {
+      this.removeParticipant(event.user.id)
       this.emit(event)
     })
   }
 
+  // Callers must unsubscribe otherwise listeners will leak.
   onEvent(listener: LoungeListener) {
     this.listeners.push(listener)
 
@@ -74,14 +82,11 @@ export async function createLounge(settings: LoungeSettings):
   const result = await apiPost<LoungeCreateResponse>('lounges', { settings })
   switch (result.type) {
     case 'success':
-      return {
-        ok:        true,
-        shortcode: result.data.shortcode
-      }
+      return succeed({ shortcode: result.data.shortcode })
     case 'empty':
-      return { ok: false, error: 'Missing data.' }
+      return fail('MISSING_DATA')
     default:
-      return { ok: false, error: result.message }
+      return fail('UNKNOWN')
   }
 }
 
@@ -89,13 +94,13 @@ export async function joinLounge(shortcode: string) {
   return await apiPost<{ joined: boolean }>(`lounges/waiting/${shortcode}/participants`)
 }
 
-export async function leaveLounge(loungeId: string, participantId: string):
-  Promise<{ ok: true } | { ok: false, error: string }> {
-  const { error } = await client.api.lounges({ loungeId }).participants({ participantId }).delete()
+async function removeParticipant(loungeId: string, participantId: string) {
+  return await client.api.lounges({ loungeId }).participants({ participantId }).delete()
+}
 
-  if (!error) return { ok: true }
-
-  const fail = (message: string) => ({ ok: false, error: message })
+export async function leaveLounge(loungeId: string, participantId: string) {
+  const { error } = await removeParticipant(loungeId, participantId)
+  if (!error) return succeed()
 
   switch (error.value.type) {
     case 'validation':
@@ -110,6 +115,26 @@ export async function leaveLounge(loungeId: string, participantId: string):
       return fail('You can\'t leave a lounge that has ended.')
     case 'CREATOR_CANT_LEAVE':
       return fail('You can\'t leave a lounge that you started. Delete it, instead.')
+    case 'CANT_KICK_USER':
+      return fail('You can\'t kick the user.')
+  }
+}
+
+export async function kickUser(loungeId: string, participantId: string) {
+  const { error } = await removeParticipant(loungeId, participantId)
+  if (!error) return succeed()
+
+  switch (error.value.type) {
+    case 'validation':
+      return fail('Wrong lounge or user ID.')
+    case 'PARTICIPANT_NOT_FOUND':
+      return fail('Wrong user ID provided.')
+    case 'UNAUTHORIZED':
+      return fail('You are unauthorized.')
+    case 'LOUNGE_NOT_FOUND':
+      return fail('Lounge not found.')
+    case 'LOUNGE_ENDED':
+    case 'CREATOR_CANT_LEAVE':
     case 'CANT_KICK_USER':
       return fail('You can\'t kick the user.')
   }

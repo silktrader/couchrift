@@ -47,8 +47,12 @@ export function broadcastUserJoined(loungeId: string, user: LoungeParticipant) {
   broadcast(loungeId, { type: 'user_joined', user })
 }
 
-export function broadcastUserLeft(loungeId: string, userId: string) {
-  broadcast(loungeId, { type: 'user_left', user: { id: userId } })
+export function broadcastUserLeft(loungeId: string, user: { id: string, name: string }) {
+  broadcast(loungeId, { type: 'user_left', user })
+}
+
+export function broadcastUserRemoved(loungeId: string, user: { id: string, name: string }) {
+  broadcast(loungeId, { type: 'user_removed', user })
 }
 
 export const loungeWsController = new Elysia()

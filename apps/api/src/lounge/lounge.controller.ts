@@ -2,10 +2,10 @@ import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
-  removeActiveLoungeParticipant
+  removeLoungeParticipant
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
-import { broadcastUserJoined, broadcastUserLeft } from './lounge.ws'
+import { broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved } from './lounge.ws'
 import { ShortcodeSchema, LoungeIdSchema, UserIdSchema } from '@couchrift/shared/schemas/primitives'
 
 export const loungeController = new Elysia()
@@ -53,9 +53,12 @@ export const loungeController = new Elysia()
   // Remove participant from lounge either by KICKING or voluntary LEAVING
   .delete('/api/lounges/:loungeId/participants/:participantId',
     async ({ user, status, params: { loungeId, participantId } }) => {
-      const result = removeActiveLoungeParticipant(participantId, user.id, loungeId)
+      const result = removeLoungeParticipant(participantId, user.id, loungeId)
       if (result.ok) {
-        broadcastUserLeft(loungeId, participantId)
+        if (user.id === participantId)
+          broadcastUserLeft(loungeId, { id: user.id, name: user.name })
+        else
+          broadcastUserRemoved(loungeId, result.user)
         return status(204)
       }
 
