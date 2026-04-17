@@ -9,6 +9,9 @@ import { client } from '$lib/et-api'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
+// Used to record pages' registered event handlers
+type LoungeListener = (event: WsLoungeEvent) => void
+
 export class LoungeService {
   private _lounge: LoungeResponse
   get lounge(): Readonly<LoungeResponse> {
@@ -16,6 +19,7 @@ export class LoungeService {
   }
 
   private ws: WsClient<LoungeEventMap>
+  private listeners: Array<LoungeListener> = []
 
   constructor(lounge: LoungeResponse) {
     this._lounge = $state(lounge)
@@ -35,6 +39,7 @@ export class LoungeService {
         ...this._lounge,
         participants: [...this._lounge.participants, event.user]
       }
+      this.emit(event)
     })
 
     this.ws.on('user_left', (event) => {
@@ -44,7 +49,21 @@ export class LoungeService {
           p => p.id !== event.user.id
         )
       }
+      this.emit(event)
     })
+  }
+
+  onEvent(listener: LoungeListener) {
+    this.listeners.push(listener)
+
+    // Return an unsubscriber
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener)
+    }
+  }
+
+  private emit(event: WsLoungeEvent) {
+    for (const listener of this.listeners) listener(event)
   }
 }
 

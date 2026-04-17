@@ -15,6 +15,17 @@
   let participants = $derived(ls.lounge?.participants ?? [])
   let isCreator = $derived(ls.lounge.creatorId === us.user.id)
 
+  $effect(() => {
+    const unsubscribe = ls.onEvent((event) => {
+      if (event.type === 'user_left' && event.user.id === us.user.id) {
+        alert('You were removed from the lounge.')
+        goto('/home')
+      }
+    })
+
+    return () => unsubscribe()
+  })
+
   async function handleLeaveLounge() {
     const result = await leaveLounge(ls.lounge.id, us.user.id)
 
