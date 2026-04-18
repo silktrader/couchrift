@@ -23,6 +23,34 @@ export function addLounge(data: AddLoungeData) {
   tx()
 }
 
+export function deleteLounge(loungeId: string, requesterId: string) {
+  const tx = db.transaction(() => {
+    const lounge = db.query<{ creatorId: string, endedAt: number | null }, { loungeId: string }>(`
+        SELECT creatorId, endedAt
+        FROM lounges
+        WHERE id = @loungeId
+    `).get({ loungeId })
+
+    if (!lounge) return fail('LOUNGE_NOT_FOUND')
+    if (lounge.creatorId !== requesterId) return fail('NOT_CREATOR')
+    if (lounge.endedAt !== null) return fail('LOUNGE_ENDED')
+
+    const deleted = db.query(`
+        DELETE
+        FROM lounges
+        WHERE id = @loungeId
+          AND endedAt IS NULL
+          AND creatorId = @requesterId
+    `).run({ loungeId, requesterId })
+
+    if (deleted.changes !== 1) throw new Error(`[deleteLounge] DELETE affected ${deleted.changes}, expected 1`)
+
+    return succeed()
+  })
+
+  return tx.immediate() // write lock is acquired at the start
+}
+
 // Looks up lounges, active or otherwise, by their shortcode.
 export function findLoungeByCode(shortcode: string, userId: string): LoungeResponse | null {
   const lounge = db.query<{
@@ -96,7 +124,7 @@ export function findActiveUserLounges(userId: string) {
 
 export function deleteLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
   // Wrap queries in a transaction to avoid race conditions between multiple requests.
-  return db.transaction(() => {
+  const tx = db.transaction(() => {
 
     // Perform checks:
     // - lounge exists
@@ -133,7 +161,9 @@ export function deleteLoungeParticipant(participantId: string, requesterId: stri
     if (changes === 0) return fail('PARTICIPANT_NOT_FOUND')
 
     return succeed({ user: { ...user, id: participantId } })
-  })()
+  })
+
+  return tx.immediate() // write lock is acquired at the start
 }
 
 export function upsertLoungeParticipant(userId: string, shortcode: string) {

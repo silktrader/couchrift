@@ -2,10 +2,10 @@ import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
-  removeLoungeParticipant
+  removeLoungeParticipant, removeLounge
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
-import { broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved } from './lounge.ws'
+import { broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved } from './lounge.ws'
 import { ShortcodeSchema, LoungeIdSchema, UserIdSchema } from '@couchrift/shared/schemas/primitives'
 
 export const loungeController = new Elysia()
@@ -26,6 +26,28 @@ export const loungeController = new Elysia()
   }, {
     auth: true,
     body: LoungeCreateSchema
+  })
+
+  // Delete lounge
+  .delete('/api/lounges/:loungeId', async ({ user, status, params: { loungeId } }) => {
+
+    const result = removeLounge(loungeId, user.id)
+    if (result.ok) {
+      broadcastLoungeRemoved(loungeId)
+      return status(204)
+    }
+
+    switch (result.error) {
+      case 'LOUNGE_NOT_FOUND':
+        return status(404, { type: result.error })
+      case 'NOT_CREATOR':
+        return status(403, { type: result.error })
+      case 'LOUNGE_ENDED':
+        return status(409, { type: result.error })
+    }
+  }, {
+    auth:   true,
+    params: t.Object({ loungeId: LoungeIdSchema })
   })
 
   // Fetch lounge data by shortcode

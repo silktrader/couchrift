@@ -1,7 +1,7 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
-  selectLoungeParticipant
+  selectLoungeParticipant, deleteLounge
 } from './lounge.repository'
 import { Shortcode } from '@couchrift/shared/schemas/primitives'
 import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -30,6 +30,10 @@ export function createLounge(userId: string, settings: { maxDuration: number }):
     console.error('Lounge creation failed: ', error)
     return { ok: false, error: 'DB_ERROR' }
   }
+}
+
+export function removeLounge(loungeId: string, requesterId: string) {
+  return deleteLounge(loungeId, requesterId)
 }
 
 export function getActiveLoungeByCode(shortcode: string, userId: string):

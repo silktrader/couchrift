@@ -16,4 +16,7 @@ export type WsLoungeEvent =
   {
     type: 'lounge_started'
     data: { startedAt: number }
+  } |
+  {
+    type: 'lounge_deleted'
   }
