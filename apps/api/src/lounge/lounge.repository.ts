@@ -43,7 +43,8 @@ export function deleteLounge(loungeId: string, requesterId: string) {
           AND creatorId = @requesterId
     `).run({ loungeId, requesterId })
 
-    if (deleted.changes !== 1) throw new Error(`[deleteLounge] DELETE affected ${deleted.changes}, expected 1`)
+    // The CASCADE effect should trigger the deletion of at least two rows: lounge and first participant
+    if (deleted.changes === 0) throw new Error(`[deleteLounge] DELETE affected 0 rows, expected 2 or more`)
 
     return succeed()
   })
