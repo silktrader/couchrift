@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS lounges (
 CREATE INDEX IF NOT EXISTS idx_lounges_creator ON lounges (creatorId);
 
 CREATE TABLE IF NOT EXISTS lounge_participants (
-    loungeId       TEXT NOT NULL REFERENCES lounges (id),
+    loungeId       TEXT NOT NULL REFERENCES lounges (id) ON DELETE CASCADE,
     participantId  TEXT NOT NULL REFERENCES users (id),
     disconnectedAt INTEGER,
     PRIMARY KEY (loungeId, participantId)
