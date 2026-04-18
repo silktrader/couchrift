@@ -7,6 +7,7 @@ import { WsClient } from '$lib/wsClient'
 import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event.ts'
 import { client } from '$lib/et-api'
 import { fail, succeed } from '@couchrift/shared/utilities'
+import type { LoungeParticipant } from '@couchrift/shared/schemas/primitives.ts'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
@@ -20,7 +21,7 @@ export class LoungeService {
   }
 
   private ws: WsClient<LoungeEventMap>
-  private listeners: Array<LoungeListener> = []
+  private listeners = new Set<LoungeListener>()
 
   constructor(lounge: LoungeResponse) {
     this._lounge = $state(lounge)
@@ -33,6 +34,14 @@ export class LoungeService {
     this.ws.disconnect()
   }
 
+  private addParticipant(participant: LoungeParticipant) {
+    if (this.lounge.participants.some(p => p.id === participant.id)) return // prevent duplicates from WS events
+    this._lounge = {
+      ...this._lounge,
+      participants: [...this._lounge.participants, participant]
+    }
+  }
+
   private removeParticipant(userId: string) {
     this._lounge = {
       ...this._lounge,
@@ -42,10 +51,7 @@ export class LoungeService {
 
   private registerHandlers() {
     this.ws.on('user_joined', (event) => {
-      this._lounge = {
-        ...this._lounge,
-        participants: [...this._lounge.participants, event.user]
-      }
+      this.addParticipant(event.user)
       this.emit(event)
     })
 
@@ -62,16 +68,14 @@ export class LoungeService {
 
   // Callers must unsubscribe otherwise listeners will leak.
   onEvent(listener: LoungeListener) {
-    this.listeners.push(listener)
+    this.listeners.add(listener)
 
     // Return an unsubscriber
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== listener)
-    }
+    return () => { this.listeners.delete(listener) }
   }
 
   private emit(event: WsLoungeEvent) {
-    for (const listener of this.listeners) listener(event)
+    for (const listener of [...this.listeners]) listener(event) // avoid mutation during iteration
   }
 }
 

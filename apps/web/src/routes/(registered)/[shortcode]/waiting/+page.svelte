@@ -19,7 +19,7 @@
   $effect(() => {
     const subscriptions: (() => void)[] = []
 
-    const meRemoved = ls.onEvent((event) => {
+    const userRemoved = ls.onEvent((event) => {
       if (event.type === 'user_removed') {
         if (event.user.id === us.user.id) {
           toast.warning(`You were removed from lounge #${ls.lounge.shortcode}.`)
@@ -29,7 +29,19 @@
         }
       }
     })
-    subscriptions.push(meRemoved)
+    subscriptions.push(userRemoved)
+
+    const userLeft = ls.onEvent((event) => {
+      if (event.type === 'user_left' && event.user.id !== us.user.id)
+        toast.info(`${event.user.name} left the lounge.`)
+    })
+    subscriptions.push(userLeft)
+
+    const userJoined = ls.onEvent((event) => {
+      if (event.type === 'user_joined' && event.user.id !== us.user.id)
+        toast.info(`${event.user.name} joined the lounge.`)
+    })
+    subscriptions.push(userJoined)
 
     return () => subscriptions.forEach((unsub) => unsub())
   })

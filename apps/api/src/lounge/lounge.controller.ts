@@ -56,7 +56,7 @@ export const loungeController = new Elysia()
       const result = removeLoungeParticipant(participantId, user.id, loungeId)
       if (result.ok) {
         if (user.id === participantId)
-          broadcastUserLeft(loungeId, { id: user.id, name: user.name })
+          broadcastUserLeft(loungeId, result.user)
         else
           broadcastUserRemoved(loungeId, result.user)
         return status(204)
