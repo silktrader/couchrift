@@ -10,13 +10,11 @@
   }>()
 </script>
 
-<header class="flex w-full flex-row justify-between px-4 pt-2">
-  <h1 class="text-2xl font-bebas text-red-400/80">
-    Couch<span class="text-yellow-500 font-bold">|</span>Rift
-  </h1>
+<header class="flex w-full flex-row justify-between items-center px-4">
+  <img src="/full_logo.png" alt="logo" class="w-1/3 max-w-40 h-auto"/>
 
-  <Button variant="ghost" class="rounded-full" size="icon" href="/me">
-    <Avatar.Root class="size-10">
+  <Button variant="ghost" class="rounded-full outline-1" size="icon" href="/me">
+    <Avatar.Root class="size-12">
       {#if user.image}
         <Avatar.Image src={`/uploads/avatars/${user.image}`} alt="User Avatar"/>
       {/if}
