@@ -64,6 +64,10 @@ export class LoungeService {
       this.removeParticipant(event.user.id)
       this.emit(event)
     })
+
+    this.ws.on('lounge_deleted', (event) => {
+      this.emit(event)
+    })
   }
 
   // Callers must unsubscribe otherwise listeners will leak.
@@ -141,5 +145,24 @@ export async function kickUser(loungeId: string, participantId: string) {
     case 'CREATOR_CANT_LEAVE':
     case 'CANT_KICK_USER':
       return fail('You can\'t kick the user.')
+  }
+}
+
+export async function deleteLounge(loungeId: string) {
+  const { error } = await client.api.lounges({ loungeId }).delete()
+  if (!error) return succeed()
+
+  switch (error.value.type) {
+    case 'UNAUTHORIZED':
+      return fail('You are unauthorized.')
+    case 'NOT_CREATOR':
+      return fail('Only lounge creators can delete lounges.')
+    case 'LOUNGE_NOT_FOUND':
+      return fail('Lounge not found.')
+    case 'LOUNGE_ENDED':
+      return fail('Lounge ended.')
+    case 'validation':
+      return fail('Wrong lounge ID.')
+
   }
 }

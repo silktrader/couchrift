@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getLoungeContext, leaveLounge, kickUser } from '$lib/loungeService.svelte.js'
+  import { getLoungeContext, leaveLounge, kickUser, deleteLounge } from '$lib/loungeService.svelte.js'
   import { Button } from '$lib/components/ui/button'
   import * as Item from '$lib/components/ui/item'
   import * as Card from '$lib/components/ui/card'
@@ -9,6 +9,7 @@
   import AppHeader from '$lib/components/layout/app-header.svelte'
   import { goto } from '\$app/navigation'
   import { toast } from 'svelte-sonner'
+  import type { LoungeParticipant } from '@couchrift/shared/schemas/primitives.ts'
 
   const ls = getLoungeContext()
   const us = getUserContext()
@@ -19,29 +20,41 @@
   $effect(() => {
     const subscriptions: (() => void)[] = []
 
-    const userRemoved = ls.onEvent((event) => {
-      if (event.type === 'user_removed') {
-        if (event.user.id === us.user.id) {
-          toast.warning(`You were removed from lounge #${ls.lounge.shortcode}.`)
-          goto('/home')
-        } else {
-          toast.info(`${event.user.name} was removed from the lounge.`)
+    subscriptions.push(
+      ls.onEvent((event) => {
+        if (event.type === 'user_removed') {
+          if (event.user.id === us.user.id) {
+            toast.warning(`You were removed from lounge #${ls.lounge.shortcode}.`)
+            goto('/home')
+          } else {
+            toast.info(`${event.user.name} was removed from the lounge.`)
+          }
         }
-      }
-    })
-    subscriptions.push(userRemoved)
+      })
+    )
 
-    const userLeft = ls.onEvent((event) => {
-      if (event.type === 'user_left' && event.user.id !== us.user.id)
-        toast.info(`${event.user.name} left the lounge.`)
-    })
-    subscriptions.push(userLeft)
+    subscriptions.push(
+      ls.onEvent((event) => {
+        if (event.type === 'user_left' && event.user.id !== us.user.id)
+          toast.info(`${event.user.name} left the lounge.`)
+      })
+    )
 
-    const userJoined = ls.onEvent((event) => {
-      if (event.type === 'user_joined' && event.user.id !== us.user.id)
-        toast.info(`${event.user.name} joined the lounge.`)
-    })
-    subscriptions.push(userJoined)
+    subscriptions.push(
+      ls.onEvent((event) => {
+        if (event.type === 'user_joined' && event.user.id !== us.user.id)
+          toast.info(`${event.user.name} joined the lounge.`)
+      })
+    )
+
+    subscriptions.push(
+      ls.onEvent((event) => {
+        if (event.type === 'lounge_deleted' && ls.lounge.creatorId !== us.user.id) {
+          toast.warning(`Lounge #${ls.lounge.shortcode} deleted. You were redirected to your home page.`)
+          goto('/home')
+        }
+      })
+    )
 
     return () => subscriptions.forEach((unsub) => unsub())
   })
@@ -56,10 +69,20 @@
     }
   }
 
-  async function handleKickUser(userId: string, userName: string) {
-    const result = await kickUser(ls.lounge.id, userId)
+  async function handleKickUser(participant: LoungeParticipant) {
+    const result = await kickUser(ls.lounge.id, participant.id)
     if (result.ok) {
-      toast.success(`You removed ${userName} from the lounge. Good riddance!`)
+      toast.success(`You removed ${participant.name} from the lounge. Good riddance!`)
+    } else {
+      toast.error(result.error)
+    }
+  }
+
+  async function handleDeleteLounge() {
+    const result = await deleteLounge(ls.lounge.id)
+    if (result.ok) {
+      toast.success(`You deleted lounge #${ls.lounge.shortcode}.`)
+      await goto('/home')
     } else {
       toast.error(result.error)
     }
@@ -119,12 +142,12 @@
           <Item.Actions>
             {#if isUser && !isCreator}
               <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Leave"
-                      onclick={() => handleLeaveLounge()}>
+                      onclick={handleLeaveLounge}>
                 <LogOut/>
               </Button>
             {:else if !isUser && isCreator}
-              <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Kick User Out" onclick={() =>
-               handleKickUser(participant.id, participant.name)}>
+              <Button size="icon-lg" variant="outline" class="rounded-full" aria-label="Kick User Out"
+                      onclick={() => handleKickUser(participant)}>
                 <UserX/>
               </Button>
             {/if}
@@ -137,7 +160,7 @@
   {#if isCreator}
     <div class="flex items-center justify-center gap-6">
       <Button size="lg">Start</Button>
-      <Button size="lg" variant="destructive">Delete</Button>
+      <Button size="lg" variant="destructive" onclick={handleDeleteLounge}>Delete</Button>
     </div>
   {/if}
 </div>
