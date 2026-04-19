@@ -11,8 +11,9 @@ CREATE TABLE IF NOT EXISTS films (
 );
 
 CREATE TABLE IF NOT EXISTS genres (
-    id   INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
+    id        INTEGER PRIMARY KEY,
+    name      TEXT    NOT NULL UNIQUE,
+    updatedAt INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
 CREATE TABLE IF NOT EXISTS film_genres (
