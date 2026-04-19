@@ -1,6 +1,6 @@
 import db from '../db'
-import { AddLoungeData } from './lounge.models'
-import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
+import type { AddLoungeData } from './lounge.models'
+import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 
 export function addLounge(data: AddLoungeData) {

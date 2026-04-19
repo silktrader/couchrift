@@ -58,7 +58,7 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 ### Backend
 
 - SQLite (WAL mode, PascalCase schemas)
-- Bun 1.3.11
+- Bun 1.3.12
 - Elysia
 - Typebox (validation)
 - BetterAuth
@@ -79,9 +79,48 @@ swipe concurrently.
 - shadcn-svelte
 - Tailwind CSS
 
+### TypeScript
+
+- TypeScript 6.0
+- use the new `Temporal` API rather than `Date` when possible
+- use `getOrInsert` and `getOrInsertComputed` with `Map` and `WeakMap` when possible
+- prefer discriminated unions and result objects over throwing exceptions
+- switch statements exhaustiveness is checked by the IDE
+
+#### File: `tsconfig.json`
+
+<file path="tsconfig.json" type="json">
+{
+  "compilerOptions": {
+	"lib": [
+	  "ESNext"
+	],
+	"target": "ESNext",
+	"module": "Preserve",
+	"moduleDetection": "force",
+	"jsx": "react-jsx",
+	"allowJs": true,
+	"moduleResolution": "bundler",
+	"allowImportingTsExtensions": true,
+	"verbatimModuleSyntax": true,
+	"noEmit": true,
+	"strict": true,
+	"skipLibCheck": true,
+	"noFallthroughCasesInSwitch": true,
+	"noUncheckedIndexedAccess": true,
+	"noImplicitOverride": true,
+	"stableTypeOrdering": true,
+	"noUnusedLocals": false,
+	"noUnusedParameters": false,
+	"noPropertyAccessFromIndexSignature": false
+  }
+}
+</file>
+
 ### Tooling
 
-- Webstorm (no Prettier)
+- Webstorm
+- no Prettier
 
 ## Instructions
 
@@ -231,6 +270,35 @@ Anonymous users can sign in and register a new account.
 ## SQLite Schema
 
 ```
+create table films (
+    id       INTEGER primary key,
+    title    TEXT                          not null,
+    language TEXT                          not null,
+    year     INTEGER                       not null,
+    runtime  INTEGER                       not null,
+    added    INTEGER default (unixepoch()) not null,
+    poster   TEXT                          not null,
+    backdrop TEXT                          not null,
+    overview TEXT                          not null,
+    check (length(language) = 2),
+    check (runtime > 0),
+    check (year >= 1888)
+);
+
+create table genres (
+    id        INTEGER primary key,
+    name      TEXT                          not null unique,
+    updatedAt INTEGER default (unixepoch()) not null
+);
+
+create table film_genres (
+    film_id  INTEGER not null references films on delete cascade,
+    genre_id INTEGER not null references genres,
+    primary key (film_id, genre_id)
+) without rowid;
+
+create index idx_film_genres_genre on film_genres (genre_id);
+
 create table migrations (
     filename  TEXT primary key,
     appliedAt INTEGER default (unixepoch()) not null
@@ -275,7 +343,7 @@ create table lounges (
 );
 
 create table lounge_participants (
-    loungeId       TEXT not null references lounges,
+    loungeId       TEXT not null references lounges on delete cascade,
     participantId  TEXT not null references users,
     disconnectedAt INTEGER,
     primary key (loungeId, participantId)
@@ -302,5 +370,6 @@ create table verifications (
     createdAt  INTEGER default (unixepoch() * 1000) not null,
     updatedAt  INTEGER default (unixepoch() * 1000) not null
 );
+
 
 ```

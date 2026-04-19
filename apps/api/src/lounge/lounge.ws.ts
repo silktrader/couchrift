@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia'
-import { LoungeParticipant, LoungeIdSchema } from '@couchrift/shared/schemas/primitives'
+import { type LoungeParticipant, LoungeIdSchema } from '@couchrift/shared/schemas/primitives'
 import { betterAuth } from '../lib/auth-plugin'
 import { getLoungeParticipant } from './lounge.service'
-import { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event'
+import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event'
 
 type wsConnection = {
   socket: {

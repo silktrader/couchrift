@@ -3,8 +3,8 @@ import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant, deleteLounge
 } from './lounge.repository'
-import { Shortcode } from '@couchrift/shared/schemas/primitives'
-import { LoungeResponse } from '@couchrift/shared/schemas/lounge'
+import type { Shortcode } from '@couchrift/shared/schemas/primitives'
+import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 
 export type CreateLoungeResult = { ok: true; shortcode: Shortcode } | { ok: false; error: 'DB_ERROR' }
 
