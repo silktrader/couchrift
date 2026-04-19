@@ -7,6 +7,7 @@ import { mkdir } from 'node:fs/promises'
 import { AVATAR_CONFIG } from './user/user.service'
 import { loungeController } from './lounge/lounge.controller'
 import { loungeWsController } from './lounge/lounge.ws'
+import { startTmdbIngestion } from './film/tmdb-ingestion.ts'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -14,7 +15,7 @@ const isProd = process.env.NODE_ENV === 'production'
 try {
   await mkdir(AVATAR_CONFIG.uploadDir, { recursive: true })
 } catch (error) {
-  console.error('Failed to create upload directory:', error)
+  console.error('[INIT] ❌ Failed to create upload directory:', error)
 }
 
 const app = new Elysia()
@@ -36,5 +37,9 @@ const app = new Elysia()
   .use(loungeWsController)
   .listen(3000)
 
-console.log(`Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'production' : 'development'})`)
+console.log(`[INIT] 🔵 Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'prod' : 'dev'})`)
+
+// Begin schedule TDMB ingestion checks and process after server initialisation
+await startTmdbIngestion()
+
 export type App = typeof app

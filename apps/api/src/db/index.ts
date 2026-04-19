@@ -3,12 +3,12 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { runMigrations } from './migrate'
 
-console.log('Initialising database ...')
+console.log('[DB] ⏳ Initialising database.')
 
 // Attempt to read DB path from .env
 const dbPath = process.env.DB_PATH
 if (!dbPath) {
-  console.error('✗ DB_PATH is not set in .env')
+  console.error('[DB] ❌ DB_PATH is not set in `.env`.')
   process.exit(1)
 }
 
@@ -25,9 +25,9 @@ db.run('PRAGMA temp_store = MEMORY') // store temporary structures in memory
 // Run migrations
 try {
   await runMigrations(db)
-  console.log('✓ Database initialized at:', dbPath)
+  console.log('[DB] ✅ Database initialised at:', dbPath)
 } catch (error) {
-  console.error('✗ Failed to initialize database.')
+  console.error('[DB] ❌ Failed to initialise database.')
   process.exit(1)
 }
 

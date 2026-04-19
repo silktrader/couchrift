@@ -23,7 +23,7 @@ export const runMigrations = async (db: Database) => {
   const pending = files.filter(f => !applied.has(f)).sort()
 
   if (pending.length === 0) {
-    console.log('✓ Database up to date')
+    console.log('[DB] ✅ Migrations up to date.')
     return
   }
 
@@ -36,9 +36,9 @@ export const runMigrations = async (db: Database) => {
         db.run(sql)
         db.run('INSERT INTO migrations (filename) VALUES (?)', [filename])
       })()
-      console.log(`✓ Applied: ${filename} (${(performance.now() - start).toFixed(1)}ms)`)
+      console.log(`[DB] ✅ Migration applied: ${filename} (${(performance.now() - start).toFixed(1)}ms)`)
     } catch (error) {
-      console.error(`✗ Migration failed: ${filename}`)
+      console.error(`[DB] ❌ Migration failed: ${filename}`)
       console.error(error)
       throw error // Re-throw to be caught by the caller
     }
