@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS films (
     language TEXT    NOT NULL CHECK (length(language) = 2), -- ISO 639-1
     year     INTEGER NOT NULL CHECK (year >= 1888),
     runtime  INTEGER NOT NULL CHECK (runtime > 0),
-    added    INTEGER NOT NULL DEFAULT (unixepoch()),
+    added    INTEGER NOT NULL,
     poster   TEXT    NOT NULL,
     backdrop TEXT    NOT NULL,
     overview TEXT    NOT NULL
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS films (
 CREATE TABLE IF NOT EXISTS genres (
     id        INTEGER PRIMARY KEY,
     name      TEXT    NOT NULL UNIQUE,
-    updatedAt INTEGER NOT NULL DEFAULT (unixepoch())
+    updatedAt INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS film_genres (
