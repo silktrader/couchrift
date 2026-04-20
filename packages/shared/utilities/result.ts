@@ -8,6 +8,11 @@ export function fail<const E extends string>(error: E): { readonly ok: false, re
   return { ok: false, error } as const
 }
 
+export function failWithDetails<const E extends string>(error: E, details: string):
+  { readonly ok: false, readonly error: E, details: string } {
+  return { ok: false, error, details } as const
+}
+
 export function succeed(): { readonly ok: true }
 
 export function succeed<const T extends Record<string, unknown> & NoOk>(

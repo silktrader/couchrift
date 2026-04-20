@@ -1,1 +1,1 @@
-export { fail, succeed } from './result'
+export { fail, failWithDetails, succeed } from './result'
