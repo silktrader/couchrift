@@ -29,6 +29,17 @@ export function countFilms(): number {
   return total
 }
 
+// Fetch the IDs provided by `ids` that are already present in `films`.
+export function selectExistingFilmIds(ids: number[]): Set<number> {
+  const existing = db.query<{ id: number }, { ids: string }>(`
+      SELECT id
+      FROM films
+      WHERE id IN (SELECT value FROM json_each(@ids))
+  `).all({ ids: JSON.stringify(ids) })
+
+  return new Set(existing.map(r => r.id))
+}
+
 export function insertFilm(film: TmdbFilmData) {
   // Derive release year from string
   const year = parseInt(film.release_date.slice(0, 4))
@@ -45,14 +56,6 @@ export function insertFilm(film: TmdbFilmData) {
     db.query(`
         INSERT INTO films (id, title, language, year, runtime, added, poster, backdrop, overview)
         VALUES (@id, @title, @language, @year, @runtime, @added, @poster, @backdrop, @overview)
-        ON CONFLICT(id) DO UPDATE SET title    = excluded.title,
-                                      language = excluded.language,
-                                      year     = excluded.year,
-                                      runtime  = excluded.runtime,
-                                      added    = excluded.added,
-                                      poster   = excluded.poster,
-                                      backdrop = excluded.backdrop,
-                                      overview = excluded.overview
     `).run({
       id,
       title:    film.title,
@@ -64,11 +67,6 @@ export function insertFilm(film: TmdbFilmData) {
       backdrop: film.backdrop_path,
       overview: film.overview
     })
-
-    // Delete all previous genres to apply the new set
-    db.query(`DELETE
-              FROM film_genres
-              WHERE film_id = @id`).run({ id })
 
     // Add film genres
     db.query(`INSERT INTO film_genres (film_id, genre_id)

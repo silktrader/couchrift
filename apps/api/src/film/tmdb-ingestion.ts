@@ -1,4 +1,6 @@
-import { getOldestGenreUpdate, insertGenres, insertFilm, countFilms } from './film.repository'
+import {
+  getOldestGenreUpdate, insertGenres, insertFilm, countFilms, selectExistingFilmIds
+} from './film.repository'
 import { TMDB } from './tmdb-config'
 import type { TmdbGenre, TmdbFilmDiscover, TmdbFilmData, TmdbDiscoverResponse } from './film.models'
 import { fail, succeed } from '@couchrift/shared/utilities'
@@ -88,19 +90,28 @@ async function ingestTmdbFilms() {
     console.error(errorMessage)
     return
   }
-  const randomFilms = pageResponse.data.results
-  console.log(`[TMDB] ✅ Fetched ${randomFilms.length} films.`)
 
   // Removes inadequate films (i.e. adult ones) or ones with insufficient data (poster)
-  const filteredFilms = randomFilms.filter((film: TmdbFilmDiscover) =>
+  const filteredFilms = pageResponse.data.results.filter((film: TmdbFilmDiscover) =>
     film.poster_path &&
     !film.adult &&
     film.vote_average > 4)
-  console.log(`[TMDB] ✅ Filtered ${filteredFilms.length} out of ${randomFilms.length} fetched ones.`)
+  console.log(`[TMDB] ✅ Fetched random page containing ${filteredFilms.length} films.`)
+
+  // Shorten the list of films to fetch by removing the ones already present in the DB
+  const existingIds = selectExistingFilmIds(filteredFilms.map(f => f.id))
+  const missingFilms = filteredFilms.filter(film => !existingIds.has(film.id))
+
+  if (missingFilms.length === 0) {
+    console.log(`[TMDB] ⏩ No new films found on random page.`)
+    return
+  }
 
   // Fetch films details and store in DB
   let addedFilms = 0
-  for (const film of filteredFilms) {
+  console.log(`[TMDB] ⏳ Fetching the details of ${missingFilms.length} films.`)
+
+  for (const film of missingFilms) {
     // Fetch TMDB film
     const filmResponse = await fetchFilm(film.id)
     if (!filmResponse.ok) {
@@ -118,7 +129,7 @@ async function ingestTmdbFilms() {
     }
   }
 
-  console.log(`[TMDB] ✅ Added or updated ${addedFilms} new films.`)
+  console.log(`[TMDB] ✅ Added ${addedFilms} new films.`)
 }
 
 // Return a random page filled with films according to randomly chosen and variable film parameters
