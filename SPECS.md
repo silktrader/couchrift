@@ -57,21 +57,33 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 
 ### Backend
 
-- SQLite (WAL mode, PascalCase schemas)
+- SQLite, via Bun's SQLite3 driver
 - Bun 1.3.12
 - Elysia
 - Typebox (validation)
 - BetterAuth
 - Sharp (avatar images conversion)
 
-SQLite was chosen over PostgreSQL, given:
+#### SQLite
 
-* the low volume of traffic and writes
-* the ease of portability and self-hosting
-* the small overhead compared
+- features on: WAL, foreign keys, strict mode
+- use `query()` in most cases, as bun:sqlite prepares and caches the statement
+- use `prepare()` instead of `query()` for dynamically generated SQL
+- prefer `query()` with generic parameters for type safety and minimal overhead:
 
-All swipe inserts and match checks must occur within **transactions** to prevent race conditions when multiple users
-swipe concurrently.
+    ```
+    db.query<{title: string, id: string}, {min: number}>(
+    "SELECT title, id FROM films WHERE runtime > @min"
+    ).all({min})
+    ```
+
+- defined parameters with `@param` syntax
+- defined column names with Pascal case
+- swipe inserts and match checks must occur within transactions to prevent race conditions when multiple users
+  swipe concurrently
+- store dates like `updatedAt`, `createdAt`, etc. as integer timestamps including milliseconds
+- don't use `unixepoch() * 1000` for dates as it loses precision
+- use `immediate` for write transactions
 
 ### Frontend
 
@@ -276,7 +288,7 @@ create table films (
     language TEXT                          not null,
     year     INTEGER                       not null,
     runtime  INTEGER                       not null,
-    added    INTEGER default (unixepoch()) not null,
+    added    INTEGER                       not null,
     poster   TEXT                          not null,
     backdrop TEXT                          not null,
     overview TEXT                          not null,
@@ -288,7 +300,7 @@ create table films (
 create table genres (
     id        INTEGER primary key,
     name      TEXT                          not null unique,
-    updatedAt INTEGER default (unixepoch()) not null
+    updatedAt INTEGER not null
 );
 
 create table film_genres (
