@@ -1,25 +1,33 @@
+type Empty = Record<never, never>
+
 // Prevents overriding `ok` in the success payload
 type NoOk = { ok?: never }
 
-// Ensures that `null` isn't spread or returned in `succeed()`
-type Payload = (Record<string, unknown> & NoOk) | void
+export type Failure<E extends string> =
+  | { readonly ok: false, readonly error: E }
+  | { readonly ok: false, readonly error: E, readonly details: string }
 
-export function fail<const E extends string>(error: E): { readonly ok: false, readonly error: E } {
-  return { ok: false, error } as const
+type SuccessPayload = Record<string, unknown> & NoOk
+
+export type Success<T extends SuccessPayload = Empty> = ({ readonly ok: true } & Readonly<T>)
+
+export type Result<E extends string, T extends SuccessPayload = Empty> = Success<T> | Failure<E>
+
+export function fail<const E extends string>(error: E): Failure<E> {
+  return { ok: false, error }
 }
 
 export function failWithDetails<const E extends string>(error: E, details: string):
-  { readonly ok: false, readonly error: E, details: string } {
-  return { ok: false, error, details } as const
+  Failure<E> {
+  return { ok: false, error, details }
 }
 
-export function succeed(): { readonly ok: true }
+export function succeed<const T extends SuccessPayload>(value: T): Success<T>
 
-export function succeed<const T extends Record<string, unknown> & NoOk>(
-  value: T
-): { readonly ok: true } & T
+export function succeed(): Success
 
-export function succeed(value?: Payload) {
-  if (value == null) return { ok: true }
+export function succeed(value?: NoOk) {
+  if (value == null)
+    return { ok: true }
   return { ok: true, ...value }
 }
