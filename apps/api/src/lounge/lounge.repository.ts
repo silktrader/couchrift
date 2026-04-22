@@ -2,6 +2,7 @@ import db from '../db'
 import type { AddLoungeData } from './lounge.models'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
+import { runTransactionWithRollback } from '../db/transaction.ts'
 
 export function addLounge(data: AddLoungeData) {
   const tx = db.transaction(() => {
@@ -196,4 +197,54 @@ export function selectLoungeParticipant(userId: string, loungeId: string) {
       WHERE loungeId = @loungeId
         AND participantId = @userId
   `).get({ userId, loungeId })
+}
+
+export function setLoungeStartWithInitialFilms(loungeId: string, requesterId: string, filmsPerParticipant: number) {
+  return runTransactionWithRollback(() => {
+    // Perform initial checks WITHIN the transaction to avoid race conditions
+    const lounge = db.query<{ creatorId: string, startedAt: number | null, participants: number }, {
+      loungeId: string
+    }>(`
+        SELECT creatorId, startedAt, count(lp.participantId) as participants
+        FROM lounges
+                 LEFT JOIN lounge_participants lp ON lounges.id = lp.loungeId
+        WHERE id = @loungeId
+    `).get({ loungeId })
+
+    if (!lounge) return fail('LOUNGE_MISSING')
+    if (lounge.creatorId !== requesterId) return fail('UNAUTHORISED')
+    if (lounge.startedAt !== null) return fail('LOUNGE_STARTED')
+    if (lounge.participants < 2) return fail('PARTICIPANTS_MISSING')
+
+    // Determine the number of films to gather
+    const total = filmsPerParticipant * lounge.participants
+
+    // Attempt to gather random films
+    const randomFilms = db.query<{ id: number }, { total: number }>(`
+        SELECT id
+        FROM films
+        ORDER BY random()
+        LIMIT @total
+    `).all({ total })
+    if (randomFilms.length < total) return fail('FILMS_MISSING')
+
+    // Insert the randomly gathered films into the lounge's pool.
+    for (const film of randomFilms)
+      db.query(`
+          INSERT
+          INTO lounge_films (loungeId, filmId)
+          VALUES (@loungeId, @filmId)
+      `).run({ loungeId, filmId: film.id })
+
+    const startedAt = Date.now()
+
+    // Set the lounge's start
+    db.query(`
+        UPDATE lounges
+        SET startedAt = @startedAt
+        WHERE id = @loungeId
+    `).run({ startedAt, loungeId })
+
+    return succeed({ startedAt })
+  })
 }

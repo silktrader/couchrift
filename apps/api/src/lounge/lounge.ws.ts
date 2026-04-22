@@ -59,6 +59,10 @@ export function broadcastLoungeRemoved(loungeId: string) {
   broadcast(loungeId, { type: 'lounge_deleted' })
 }
 
+export function broadcastLoungeStarted(loungeId: string, startedAt: number) {
+  broadcast(loungeId, { type: 'lounge_started', data: { startedAt } })
+}
+
 export const loungeWsController = new Elysia()
   .use(betterAuth)
   .ws('/ws/lounges/:loungeId', {

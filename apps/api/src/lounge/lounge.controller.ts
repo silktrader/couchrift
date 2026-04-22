@@ -2,10 +2,12 @@ import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
-  removeLoungeParticipant, removeLounge
+  removeLoungeParticipant, removeLounge, startLounge
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
-import { broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved } from './lounge.ws'
+import {
+  broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved, broadcastLoungeStarted
+} from './lounge.ws'
 import { ShortcodeSchema, LoungeIdSchema, UserIdSchema } from '@couchrift/shared/schemas/primitives'
 
 export const loungeController = new Elysia()
@@ -70,6 +72,29 @@ export const loungeController = new Elysia()
     return { lounges: getActiveUserLounges(user.id) }
   }, {
     auth: true
+  })
+
+  // Start a lounge and the film selection process
+  .post('/api/lounges/:loungeId/start', async ({ user, status, params: { loungeId } }) => {
+
+    const result = startLounge(loungeId, user.id)
+    if (result.ok) {
+      broadcastLoungeStarted(loungeId, result.startedAt)
+      return status(204)
+    }
+
+    const errors = {
+      UNAUTHORISED:         401,
+      LOUNGE_STARTED:       400,
+      LOUNGE_MISSING:       404,
+      PARTICIPANTS_MISSING: 404,
+      FILMS_MISSING:        404
+    } as const
+
+    return status(errors[result.error], { type: result.error })
+  }, {
+    auth:   true,
+    params: t.Object({ loungeId: LoungeIdSchema })
   })
 
   // Remove participant from lounge either by KICKING or voluntary LEAVING

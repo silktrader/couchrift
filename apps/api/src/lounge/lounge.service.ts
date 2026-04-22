@@ -1,7 +1,7 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
-  selectLoungeParticipant, deleteLounge
+  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -84,4 +84,8 @@ export function joinLounge(userId: string, shortcode: string):
 
 export function getLoungeParticipant(userId: string, loungeId: string) {
   return selectLoungeParticipant(userId, loungeId)
+}
+
+export function startLounge(loungeId: string, creatorId: string) {
+  return setLoungeStartWithInitialFilms(loungeId, creatorId, 30) // tk export film per participant
 }
