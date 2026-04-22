@@ -106,25 +106,25 @@ async function removeParticipant(loungeId: string, participantId: string) {
   return await client.api.lounges({ loungeId }).participants({ participantId }).delete()
 }
 
+const COMMON_MESSAGES = {
+  validation:     'Malformed query or request body.',
+  UNAUTHORIZED:   'You are unauthorised.',
+  LOUNGE_MISSING: 'Lounge not found.',
+  USER_MISSING:   'User not found.',
+  FORBIDDEN_KICK: 'You can\'t kick the user.'
+} as const
+
 export async function leaveLounge(loungeId: string, participantId: string) {
   const { error } = await removeParticipant(loungeId, participantId)
   if (!error) return succeed()
 
   switch (error.value.type) {
-    case 'validation':
-      return fail('Wrong lounge or user ID.')
-    case 'PARTICIPANT_NOT_FOUND':
-      return fail('Wrong user ID provided.')
-    case 'UNAUTHORIZED':
-      return fail('You are unauthorized.')
-    case 'LOUNGE_NOT_FOUND':
-      return fail('Lounge not found.')
     case 'LOUNGE_ENDED':
       return fail('You can\'t leave a lounge that has ended.')
-    case 'CREATOR_CANT_LEAVE':
-      return fail('You can\'t leave a lounge that you started. Delete it, instead.')
-    case 'CANT_KICK_USER':
-      return fail('You can\'t kick the user.')
+    case 'FORBIDDEN_LEAVE':
+      return fail('You can\'t leave a lounge that you started. You can delete it.')
+    default:
+      return fail(COMMON_MESSAGES[error.value.type])
   }
 }
 
@@ -133,18 +133,12 @@ export async function kickUser(loungeId: string, participantId: string) {
   if (!error) return succeed()
 
   switch (error.value.type) {
-    case 'validation':
-      return fail('Wrong lounge or user ID.')
-    case 'PARTICIPANT_NOT_FOUND':
-      return fail('Wrong user ID provided.')
-    case 'UNAUTHORIZED':
-      return fail('You are unauthorized.')
-    case 'LOUNGE_NOT_FOUND':
-      return fail('Lounge not found.')
     case 'LOUNGE_ENDED':
-    case 'CREATOR_CANT_LEAVE':
-    case 'CANT_KICK_USER':
+      return fail('You can\'t kick a user from a lounge that has ended.')
+    case 'FORBIDDEN_LEAVE':
       return fail('You can\'t kick the user.')
+    default:
+      return fail(COMMON_MESSAGES[error.value.type])
   }
 }
 
@@ -153,17 +147,12 @@ export async function deleteLounge(loungeId: string) {
   if (!error) return succeed()
 
   switch (error.value.type) {
-    case 'UNAUTHORIZED':
-      return fail('You are unauthorized.')
     case 'NOT_CREATOR':
       return fail('Only lounge creators can delete lounges.')
-    case 'LOUNGE_NOT_FOUND':
-      return fail('Lounge not found.')
     case 'LOUNGE_ENDED':
-      return fail('Lounge ended.')
-    case 'validation':
-      return fail('Wrong lounge ID.')
-
+      return fail('You can\'t delete a lounge that has ended.')
+    default:
+      return fail(COMMON_MESSAGES[error.value.type])
   }
 }
 
@@ -171,13 +160,16 @@ export async function startLounge(loungeId: string) {
   const { error } = await client.api.lounges({ loungeId }).start.post()
   if (!error) return succeed()
 
-  const errorMessages = {
-    UNAUTHORISED:         'You aren\'t the lounge creator.',
-    LOUNGE_STARTED:       'The lounge already started.',
-    LOUNGE_MISSING:       'Lounge not found.',
-    PARTICIPANTS_MISSING: 'There must be at least two lounge participants for the lounge to start.',
-    FILMS_MISSING:        'There aren\'t enough films to start the lounge. Try again, in ten minutes.'
-  } as const
-
-  return fail(errorMessages[error.value.type])
+  switch (error.value.type) {
+    case 'UNAUTHORISED':
+      return fail('You aren\'t the lounge creator.')
+    case 'LOUNGE_STARTED':
+      return fail('The lounge already started.')
+    case 'PARTICIPANTS_MISSING':
+      return fail('There must be at least two lounge participants for the lounge to start.')
+    case 'FILMS_MISSING':
+      return fail('There aren\'t enough films to start the lounge. Try again, in ten minutes.')
+    default:
+      return fail(COMMON_MESSAGES[error.value.type])
+  }
 }
