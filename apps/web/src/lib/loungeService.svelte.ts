@@ -166,3 +166,18 @@ export async function deleteLounge(loungeId: string) {
 
   }
 }
+
+export async function startLounge(loungeId: string) {
+  const { error } = await client.api.lounges({ loungeId }).start.post()
+  if (!error) return succeed()
+
+  const errorMessages = {
+    UNAUTHORISED:         'You aren\'t the lounge creator.',
+    LOUNGE_STARTED:       'The lounge already started.',
+    LOUNGE_MISSING:       'Lounge not found.',
+    PARTICIPANTS_MISSING: 'There must be at least two lounge participants for the lounge to start.',
+    FILMS_MISSING:        'There aren\'t enough films to start the lounge. Try again, in ten minutes.'
+  } as const
+
+  return fail(errorMessages[error.value.type])
+}

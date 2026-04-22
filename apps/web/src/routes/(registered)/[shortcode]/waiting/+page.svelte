@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getLoungeContext, leaveLounge, kickUser, deleteLounge } from '$lib/loungeService.svelte.js'
+  import { getLoungeContext, leaveLounge, kickUser, deleteLounge, startLounge } from '$lib/loungeService.svelte.js'
   import { Button } from '$lib/components/ui/button'
   import * as Item from '$lib/components/ui/item'
   import * as Card from '$lib/components/ui/card'
@@ -88,6 +88,16 @@
     }
   }
 
+  async function handleStartLounge() {
+    const result = await startLounge(ls.lounge.id)
+    if (result.ok) {
+      toast.success(`You started lounge #${ls.lounge.shortcode}.`)
+      await goto(`/${ls.lounge.shortcode}`)
+    } else {
+      toast.error(result.error)
+    }
+  }
+
 </script>
 
 <div class="flex h-full w-full flex-col gap-12">
@@ -159,7 +169,7 @@
 
   {#if isCreator}
     <div class="flex items-center justify-center gap-6">
-      <Button size="lg">Start</Button>
+      <Button size="lg" onclick={handleStartLounge}>Start</Button>
       <Button size="lg" variant="destructive" onclick={handleDeleteLounge}>Delete</Button>
     </div>
   {/if}
