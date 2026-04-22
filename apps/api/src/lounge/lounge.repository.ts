@@ -32,7 +32,7 @@ export function deleteLounge(loungeId: string, requesterId: string) {
         WHERE id = @loungeId
     `).get({ loungeId })
 
-    if (!lounge) return fail('LOUNGE_NOT_FOUND')
+    if (!lounge) return fail('LOUNGE_MISSING')
     if (lounge.creatorId !== requesterId) return fail('NOT_CREATOR')
     if (lounge.endedAt !== null) return fail('LOUNGE_ENDED')
 
@@ -125,33 +125,31 @@ export function findActiveUserLounges(userId: string) {
 }
 
 export function deleteLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
-  // Wrap queries in a transaction to avoid race conditions between multiple requests.
-  const tx = db.transaction(() => {
+  return runTransactionWithRollback(() => {
+    // Run pre-write checks
+    const lounge = db.query<
+      {
+        creatorId: string,
+        endedAt: number | null,
+        participantName: string,
+        participantIsMember: boolean
+      },
+      { loungeId: string, participantId: string }
+    >(`
+        SELECT creatorId, endedAt, u.name AS participantName, (lp.participantId IS NOT NULL) as participantIsMember
+        FROM lounges l
+                 LEFT JOIN users u ON u.id = @participantId
+                 LEFT JOIN lounge_participants lp ON lp.loungeId = l.id AND lp.participantId = u.id
+        WHERE l.id = @loungeId
+    `).get({ loungeId, participantId })
 
-    // Perform checks:
-    // - lounge exists
-    // - lounge hasn't ended
-    // - target user isn't the creator
-
-    const lounge = db.query<{ creatorId: string, endedAt: number | null }, { loungeId: string }>(`
-        SELECT creatorId, endedAt
-        FROM lounges
-        WHERE id = @loungeId
-    `).get({ loungeId })
-
-    if (lounge === null) return fail('LOUNGE_NOT_FOUND')
+    if (lounge === null) return fail('LOUNGE_MISSING')
     if (lounge.endedAt !== null) return fail('LOUNGE_ENDED')
-    if (lounge.creatorId === participantId) return fail('CREATOR_CANT_LEAVE')
-    if (participantId !== requesterId && requesterId !== lounge.creatorId) return fail('CANT_KICK_USER')
+    if (lounge.creatorId === participantId) return fail('FORBIDDEN_LEAVE')
+    if (!lounge.participantIsMember) return fail('USER_MISSING')
+    if (participantId !== requesterId && requesterId !== lounge.creatorId) return fail('FORBIDDEN_KICK')
 
-    // Check user existence and cache user data
-    const user = db.query<{ name: string }, { participantId: string }>(`
-        SELECT name
-        FROM users
-        WHERE id = @participantId`).get({ participantId })
-    if (!user) return fail('PARTICIPANT_NOT_FOUND')
-
-    // Look for the participant entry and delete it if present.
+    // Finally delete the user
     const { changes } = db.query(`
         DELETE
         FROM lounge_participants
@@ -159,13 +157,11 @@ export function deleteLoungeParticipant(participantId: string, requesterId: stri
           AND loungeId = @loungeId
     `).run({ participantId, loungeId })
 
-    // Return a negative result to be handled by the service
-    if (changes === 0) return fail('PARTICIPANT_NOT_FOUND')
+    // Defensive guard for future code changes
+    if (changes === 0) throw new Error(`[deleteLoungeParticipant] DELETE affected 0 rows, expected 1`)
 
-    return succeed({ user: { ...user, id: participantId } })
+    return succeed({ user: { name: lounge.participantName, id: participantId } })
   })
-
-  return tx.immediate() // write lock is acquired at the start
 }
 
 export function upsertLoungeParticipant(userId: string, shortcode: string) {

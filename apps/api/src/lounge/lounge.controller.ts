@@ -39,14 +39,13 @@ export const loungeController = new Elysia()
       return status(204)
     }
 
-    switch (result.error) {
-      case 'LOUNGE_NOT_FOUND':
-        return status(404, { type: result.error })
-      case 'NOT_CREATOR':
-        return status(403, { type: result.error })
-      case 'LOUNGE_ENDED':
-        return status(409, { type: result.error })
+    const codes = {
+      LOUNGE_MISSING: 404,
+      NOT_CREATOR:    403,
+      LOUNGE_ENDED:   409
     }
+
+    return status(codes[result.error], { type: result.error })
   }, {
     auth:   true,
     params: t.Object({ loungeId: LoungeIdSchema })
@@ -83,7 +82,7 @@ export const loungeController = new Elysia()
       return status(204)
     }
 
-    const errors = {
+    const codes = {
       UNAUTHORISED:         401,
       LOUNGE_STARTED:       400,
       LOUNGE_MISSING:       404,
@@ -91,7 +90,7 @@ export const loungeController = new Elysia()
       FILMS_MISSING:        404
     } as const
 
-    return status(errors[result.error], { type: result.error })
+    return status(codes[result.error], { type: result.error })
   }, {
     auth:   true,
     params: t.Object({ loungeId: LoungeIdSchema })
@@ -109,18 +108,15 @@ export const loungeController = new Elysia()
         return status(204)
       }
 
-      switch (result.error) {
-        case 'LOUNGE_NOT_FOUND':
-          return status(404, { type: result.error })
-        case 'LOUNGE_ENDED':
-          return status(409, { type: result.error })
-        case 'CREATOR_CANT_LEAVE':
-          return status(403, { type: result.error })
-        case 'CANT_KICK_USER':
-          return status(403, { type: result.error })
-        case 'PARTICIPANT_NOT_FOUND':
-          return status(404, { type: result.error })
-      }
+      const codes = {
+        LOUNGE_ENDED:    409,
+        LOUNGE_MISSING:  404,
+        USER_MISSING:    404,
+        FORBIDDEN_KICK:  403,
+        FORBIDDEN_LEAVE: 403
+      } as const
+
+      return status(codes[result.error], { type: result.error })
     },
     {
       auth:   true,
