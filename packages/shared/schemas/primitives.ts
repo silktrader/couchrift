@@ -2,12 +2,12 @@ import { Type, type Static } from '@sinclair/typebox'
 import { ID_LENGTH, ID_ALPHABETS } from '../config/ids.ts'
 import { UserName } from './auth.ts'
 
-export const Timestamp = Type.Integer({
+export const TimestampSchema = Type.Integer({
   minimum:     0,
-  description: 'Unix timestamp (seconds)'
+  description: 'Unix timestamp in milliseconds'
 })
 
-export const NullableTimestamp = Type.Union([Timestamp, Type.Null()])
+export const NullableTimestamp = Type.Union([TimestampSchema, Type.Null()])
 
 const alphaRegex = (alphabet: string, length: number) =>
   `^[${alphabet}]{${length}}$`

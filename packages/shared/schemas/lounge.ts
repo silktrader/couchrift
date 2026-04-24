@@ -1,6 +1,6 @@
 import { Type, type Static } from '@sinclair/typebox'
 import {
-  Timestamp, NullableTimestamp, UserIdSchema, ShortcodeSchema, LoungeParticipantSchema, LoungeIdSchema
+  TimestampSchema, NullableTimestamp, UserIdSchema, ShortcodeSchema, LoungeParticipantSchema, LoungeIdSchema
 } from './primitives.ts'
 
 export const LoungeSettingsSchema = Type.Object({
@@ -18,7 +18,7 @@ export type LoungeCreateResponse = Static<typeof LoungeCreateResponseSchema>
 export const LoungeResponseSchema = Type.Object({
   id:           LoungeIdSchema,
   creatorId:    UserIdSchema,
-  createdAt:    Timestamp,
+  createdAt:    TimestampSchema,
   endedAt:      NullableTimestamp,
   startedAt:    NullableTimestamp,
   shortcode:    ShortcodeSchema,

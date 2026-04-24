@@ -27,3 +27,10 @@ export function formatRelativeTime(timestamp: number): string {
   // Unreachable, but satisfies TypeScript
   return rtf.format(Math.round(duration), 'years')
 }
+
+// Time duration, as 1h 23m
+export function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes - (hours * 60)
+  return `${hours}h ${remainingMinutes}m`
+}

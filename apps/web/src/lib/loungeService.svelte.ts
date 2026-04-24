@@ -8,6 +8,7 @@ import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event.ts
 import { client } from '$lib/et-api'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import type { LoungeParticipant } from '@couchrift/shared/schemas/primitives.ts'
+import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
@@ -19,6 +20,9 @@ export class LoungeService {
   get lounge(): Readonly<LoungeResponse> {
     return this._lounge
   }
+
+  private _films: TmdbFilm[] = $state([])
+  get films() { return this._films }
 
   private ws: WsClient<LoungeEventMap>
   private listeners = new Set<LoungeListener>()
@@ -47,6 +51,21 @@ export class LoungeService {
       ...this._lounge,
       participants: this._lounge.participants.filter(p => p.id !== userId)
     }
+  }
+
+  // Get the films IDs the user hasn't swiped through.
+  public async queueLoungeFilms() {
+    const { data, error } = await client.api.lounges({ loungeId: this.lounge.id }).films.unswiped.me.get()
+    if (error) return fail(error.value.type)
+
+    // API should guarantee uniqueness so this is merely defensive
+    const existingIds = new Set(this._films.map(f => f.id))
+    for (const film of data.unswipedFilms) {
+      if (!existingIds.has(film.id))
+        this._films.push(film)
+    }
+
+    return succeed()
   }
 
   private registerHandlers() {
