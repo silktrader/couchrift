@@ -2,11 +2,12 @@
 
 ## Overview
 
-“Couch Rift” is a web application that allows multiple users to agree on a film to watch by way of Tinder-like swipes on
-film covers.
+“Couch Rift” is a web application that allows multiple users to agree on a film to watch by swiping through film
+posters.
 
 Hosts create shared sessions ("lounges") and set filters (max runtime, language, excluded genres, earliest release date,
-etc.). Users join lounges and are then presented with a carousel of random film posters; they swipe left to discard
+etc.). Users join lounges. When lounges start, users are then presented with a series of random film posters; they swipe
+left to discard
 films or right to select the ones they would like to watch.
 
 The lounge ends when every participant has liked the same film.
@@ -24,6 +25,7 @@ This is a **monorepo** with Bun's workspaces.
 │   │   ├── src
 │   │   │   ├── db
 │   │   │   │   └── migrations
+│   │   │   ├── film
 │   │   │   ├── lib
 │   │   │   ├── lounge
 │   │   │   └── user
@@ -33,6 +35,7 @@ This is a **monorepo** with Bun's workspaces.
 │       │   ├── lib
 │       │   │   ├── assets
 │       │   │   ├── components
+│       │   │   │   ├── layout
 │       │   │   │   └── ui
 │       │   │   └── hooks
 │       │   └── routes
@@ -41,12 +44,15 @@ This is a **monorepo** with Bun's workspaces.
 │       │       │   ├── home
 │       │       │   ├── me
 │       │       │   └── welcome
-│       │       └── register
+│       │       └── (unregistered)
+│       │           ├── register
+│       │           └── sign-in
 │       └── static
 └── packages
     └── shared
         ├── config
-        └── schemas  
+        ├── schemas
+        └── utilities
 ```
 
 `apps/web` refers to the SvelteKit SPA.
@@ -60,6 +66,7 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 - SQLite, via Bun's SQLite3 driver
 - Bun 1.3.12
 - Elysia
+- Eden Treaty
 - Typebox (validation)
 - BetterAuth
 - Sharp (avatar images conversion)
@@ -93,9 +100,8 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 
 ### TypeScript
 
-- TypeScript 6.0
-- use the new `Temporal` API rather than `Date` when possible
-- use `getOrInsert` and `getOrInsertComputed` with `Map` and `WeakMap` when possible
+- TypeScript 6.0 strict
+- use `getOrInsert` and `getOrInsertComputed` with `Map`
 - prefer discriminated unions and result objects over throwing exceptions
 - switch statements exhaustiveness is checked by the IDE
 
@@ -129,11 +135,6 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 }
 </file>
 
-### Tooling
-
-- Webstorm
-- no Prettier
-
 ## Instructions
 
 ### Svelte 5
@@ -161,42 +162,56 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 - Use TypeScript strictly. Avoid `any`. Let Elysia/Svelte infer types where possible.
 - Return object literals result types for business logic and service-level functions.
 
+### Error Handling
+
+All service functions return either `Failure` or `Success`:
+
+```ts
+type Failure<E extends string> =
+  | { readonly ok: false, readonly error: E }
+  | { readonly ok: false, readonly error: E, readonly details: string }
+
+export type Success<T extends Record<string, unknown> = {}> =
+  { readonly ok: true } & Readonly<Omit<T, 'ok'>>
+```
+
+Errors are:
+
+- deterministic
+- string-literal based
+
 ## Details
 
 ### Film Ingestion
 
-* films are periodically fetched from TMDB
-* film selection is random (pages, order, rank within page)
-* data is stored locally in the database
+Films are periodically fetched from TMDB and stored in `films`:
 
-#### Stored fields:
-
-* title
-* runtime
-* language
-* poster URL
-* release date
+1. a random page from https://api.themoviedb.org/3/discover/movie is fetched
+2. the films within are filtered to remove adult ones, shorts, documentaries, films without posters, etc.
+3. for each filtered film details are fetched from https://api.themoviedb.org/3/movie/{movie_id} and stored in `films`
 
 ### Film Queue
 
-At lounge start:
+Each lounge has a **shared pool** of films: `lounge_films`.
 
-* the server drafts a set of films from the database
-* the server sends the same films in random order to all participants
+1. the creator starts a lounge with a POST request
+2. the server selects X number of films from the `films` table, based on a pre-generated random seed, and stores them in
+   `lounge_films`
+3. the client issues requests for films to swipe with a GET request
+4. the server sends the lounge films that the user hasn't swiped yet in batches of 15 films
 
-Batching:
+During each batch request the server evaluates whether to refill `lounge_films` with new items from the app wide
+`films`.
 
-- initial batch includes 30 films per participant
-- when 90% consumed: fetch and append another batch
+#### Constraints
 
-Constraints:
+- a film appears at most once per lounge
+- a user never receives the same film twice
 
-- films satisfy lounge filters
+#### Batching
 
-### Users
-
-- users have one avatar, a name and an email
-- there are registered users and anonymous users, created with BetterAuth's anonymous plugin
+- clients get 15 films per batch
+- when 5 films or fewer remain in the client's cache another batch of films is fetched and appended to the existing one
 
 ### Lounges Rules
 
@@ -207,37 +222,37 @@ Constraints:
 * all participants share the same film queue but the order is randomised
 * lounge filters are set by the creating user.
 
-### Lounge Lifecycle
+### Lounge States and Transitions
 
-`waiting` -> `active` -> `completed`
+```
+waiting               (rules are decided, swiping impossible)
+waiting → active      (lounge started, changing rules becomes impossible, new users are prevented from joining)
+active  → completed   (match found, swiping becomes impossible)
+waiting → deleted     (creator deleted the lounge)
+active  → deleted     (creator deleted the lounge)
+```
 
-`cancelled` lounges are deleted from the database.
-
-- `waiting`: users join and wait for the start
-- `active`: swiping in progress, rules can't be changed
-- `completed`: match found, swiping impossible
-
-Users have at most 45 seconds for each card (can be set in the lounge's settings); it's discarded ("disliked") after
-that.
-
-The user who created the lounge can interrupt the process when she so desires.
+Entries in `lounge_films`, `swipes` and `lounge_participants` are removed when a lounge is deleted.
 
 ### Swipe Logic
 
 #### Submission
 
-- swipes are submitted via POST requests
-- swipe values are either `1` (like) or `-1` (dislike)
+Swipes are submitted via POST requests with a `value` of either `1`, for likes, or `-1` for dislikes.
+
+A swipe is rejected when:
+
+- the lounge is not `active`
+- the user is not a participant
+- the user already swiped the film
 
 #### Transaction Requirements
 
-Each swipe must execute in a single transaction:
+Each swipe must be processed atomically, within a single `IMMEDIATE` transaction:
 
-1. insert swipe
-2. if the value is +1, check if the film is a match
-3. if a match is found:
-    - update the lounge state in the database
-    - notify all clients
+- check lounge state
+- insert swipe
+- check match
 
 ### Match Logic
 
@@ -246,142 +261,138 @@ A film is considered a match if and only if :
 - every participant in the lounge swiped that film
 - all swipes are positive (`1`)
 
+When a match is detected, the lounge ends (`endedAt` is set) and the matched film is communicated by Websocket
+broadcast.
+Subsequent swipes are rejected.
+
 ## API routes
 
 Lounge participants can:
 
-* join a lounge: `POST /api/lounges/:code/participants`
-* leave a lounge: `DELETE /api/lounges/:code/participants/:id`
-* get lounge data: `GET /api/lounges/:loungeId`
-* start a lounge swiping: `POST /api/lounges/:loungeId/start`
+* join a lounge that hasn't started or ended: `POST /api/lounges/waiting/:code/participants`
+* leave a lounge that hasn't ended: `DELETE /api/lounges/:loungeId/participants/:participantId`
+* get data from a lounge: `GET /api/lounges/:loungeId`
+* fetch active lounge by code: `GET /api/lounges/active/:code`
 * like or dislike a film: `POST /api/lounges/:loungeId/swipes`
 * get lounge films: `GET /api/lounges/:loungeId/queue`
 * list the joined lounges: `GET /api/users/me/lounges`
+* fetch unswiped films in a lounge: `GET api/lounges/:loungeId/films/unswiped/me`
+
+Lounge creators can:
+
+* create a lounge: `POST /api/lounges`
+* delete a lounge: `DELETE /api/lounges/:loungeId`
+* start a lounge: `POST /api/lounges/:loungeId/start`
+* kick a user: `DELETE /api/lounges/:loungeId/participants/:participantId`
 
 Registered users can also:
 
 * create a lounge: `POST /api/lounges`
-* delete a lounge: `DELETE /api/lounges/:loungeId`
 * upload their avatar: `POST /api/users/me/avatar`
+* list all the active lounges they've joined: `GET /api/me/lounges/active`
 
 Anonymous users can sign in and register a new account.
 
+Use `loungeId` for internal IDs and `code` for public joins.
+
 ## WebSocket Events and Payloads
 
-* user joins lounge: user ID
-* user leaves lounge: user ID
-* lounge starts: lounge ID
-* match found: film details
+```
+user_joined:  { id, name, image }
+user_left: { id, name }
+user_removed: { id, name }
+lounge_started: { startedAt }
+match_found: { filmId, title, language, year, runtime, poster, backdrop, overview }
+```
 
 ## Authentication
 
 - managed via BetterAuth
 - uses the `email and password` method
-- newcomers are assigned a user ID on the fly without needing onboarding
 
 ## SQLite Schema
 
 ```
-create table films (
-    id       INTEGER primary key,
-    title    TEXT                          not null,
-    language TEXT                          not null,
-    year     INTEGER                       not null,
-    runtime  INTEGER                       not null,
-    added    INTEGER                       not null,
-    poster   TEXT                          not null,
-    backdrop TEXT                          not null,
-    overview TEXT                          not null,
-    check (length(language) = 2),
-    check (runtime > 0),
-    check (year >= 1888)
-);
-
-create table genres (
-    id        INTEGER primary key,
-    name      TEXT                          not null unique,
-    updatedAt INTEGER not null
-);
-
-create table film_genres (
-    film_id  INTEGER not null references films on delete cascade,
-    genre_id INTEGER not null references genres,
-    primary key (film_id, genre_id)
-) without rowid;
-
-create index idx_film_genres_genre on film_genres (genre_id);
-
 create table migrations (
     filename  TEXT primary key,
     appliedAt INTEGER default (unixepoch()) not null
 );
 
-create table users (
-    id            TEXT                                 not null primary key,
-    name          TEXT                                 not null,
-    email         TEXT                                 not null unique,
-    emailVerified INTEGER default 0                    not null,
+CREATE TABLE IF NOT EXISTS users (
+    id            TEXT    NOT NULL PRIMARY KEY,
+    name          TEXT    NOT NULL,
+    email         TEXT    NOT NULL UNIQUE,
+    emailVerified INTEGER NOT NULL DEFAULT 0,
     image         TEXT,
-    isAnonymous   INTEGER default 0,
-    createdAt     INTEGER default (unixepoch() * 1000) not null,
-    updatedAt     INTEGER default (unixepoch() * 1000) not null
+    isAnonymous   INTEGER          DEFAULT 0, -- for later use by the anonymous plugin
+    createdAt     INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+    updatedAt     INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 );
 
-create table accounts (
-    id                    TEXT primary key,
-    userId                TEXT                                 not null references users on delete cascade,
-    accountId             TEXT                                 not null,
-    providerId            TEXT                                 not null,
-    accessToken           TEXT,
-    refreshToken          TEXT,
-    accessTokenExpiresAt  INTEGER,
-    refreshTokenExpiresAt INTEGER,
-    scope                 TEXT,
-    idToken               TEXT,
-    password              TEXT,
-    createdAt             INTEGER default (unixepoch() * 1000) not null,
-    updatedAt             INTEGER default (unixepoch() * 1000) not null
+CREATE TABLE IF NOT EXISTS lounges (
+    id        TEXT PRIMARY KEY,
+    creatorId TEXT    NOT NULL REFERENCES users (id),
+    shortcode TEXT    NOT NULL, -- must be unique among active lounges
+    createdAt INTEGER NOT NULL,
+    startedAt INTEGER,          -- start timestamp required by late reconnects on missing WS updates
+    endedAt   INTEGER,          -- end timestamp signals the lounge's inactivity
+    settings  TEXT    NOT NULL, -- JSON field
+    CONSTRAINT json_settings CHECK (json_valid(settings))
 );
 
-create table lounges (
-    id        TEXT primary key,
-    creatorId TEXT    not null references users,
-    shortcode TEXT    not null,
-    createdAt INTEGER not null,
-    startedAt INTEGER,
-    endedAt   INTEGER,
-    settings  TEXT    not null,
-    constraint json_settings check (json_valid(settings))
-);
+CREATE INDEX IF NOT EXISTS idx_lounges_creator ON lounges (creatorId);
 
-create table lounge_participants (
-    loungeId       TEXT not null references lounges on delete cascade,
-    participantId  TEXT not null references users,
+CREATE TABLE IF NOT EXISTS lounge_participants (
+    loungeId       TEXT NOT NULL REFERENCES lounges (id) ON DELETE CASCADE,
+    participantId  TEXT NOT NULL REFERENCES users (id),
     disconnectedAt INTEGER,
-    primary key (loungeId, participantId)
-) without rowid;
+    PRIMARY KEY (loungeId, participantId)
+) WITHOUT ROWID;
 
-create index idx_lounges_creator on lounges (creatorId);
 
-create table sessions (
-    id        TEXT primary key,
-    userId    TEXT                                 not null references users on delete cascade,
-    token     TEXT                                 not null unique,
-    expiresAt INTEGER                              not null,
-    ipAddress TEXT,
-    userAgent TEXT,
-    createdAt INTEGER default (unixepoch() * 1000) not null,
-    updatedAt INTEGER default (unixepoch() * 1000) not null
+CREATE TABLE IF NOT EXISTS films (
+    id       INTEGER PRIMARY KEY,                           -- TMDB id
+    title    TEXT    NOT NULL,
+    language TEXT    NOT NULL CHECK (length(language) = 2), -- ISO 639-1
+    year     INTEGER NOT NULL CHECK (year >= 1888),
+    runtime  INTEGER NOT NULL CHECK (runtime > 0),
+    added    INTEGER NOT NULL,  -- ingestion timestamp
+    poster   TEXT    NOT NULL,
+    backdrop TEXT    NOT NULL,
+    overview TEXT    NOT NULL
 );
 
-create table verifications (
-    id         TEXT primary key,
-    identifier TEXT                                 not null,
-    value      TEXT                                 not null,
-    expiresAt  INTEGER                              not null,
-    createdAt  INTEGER default (unixepoch() * 1000) not null,
-    updatedAt  INTEGER default (unixepoch() * 1000) not null
+CREATE TABLE IF NOT EXISTS genres (
+    id        INTEGER PRIMARY KEY,
+    name      TEXT    NOT NULL UNIQUE,
+    updatedAt INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS film_genres (
+    film_id  INTEGER NOT NULL REFERENCES films (id) ON DELETE CASCADE,
+    genre_id INTEGER NOT NULL REFERENCES genres (id),
+    PRIMARY KEY (film_id, genre_id)
+) WITHOUT ROWID;
 
+CREATE INDEX IF NOT EXISTS idx_film_genres_genre ON film_genres (genre_id)
+    
+CREATE TABLE IF NOT EXISTS lounge_films (
+    loungeId TEXT    NOT NULL REFERENCES lounges (id) ON DELETE CASCADE,
+    filmId   INTEGER NOT NULL, -- TMDB id, stands alone and is resilient when films are removed
+    PRIMARY KEY (loungeId, filmId)
+) WITHOUT ROWID;    
+
+
+CREATE TABLE IF NOT EXISTS swipes (
+    loungeId TEXT    NOT NULL REFERENCES lounges (id) ON DELETE CASCADE,
+    userId   TEXT    NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    filmId   INTEGER NOT NULL, -- refers to TMDB's ID; remains relevant even in the film's absence from `films`                                 
+    swipedAt INTEGER NOT NULL CHECK (swipedAt > 1000000000000), -- circa 2001 in ms
+    value    INTEGER NOT NULL CHECK (value IN (1, -1)),         -- like (1) or dislike (-1)
+    PRIMARY KEY (loungeId, userId, filmId)
+) WITHOUT ROWID;
+
+
+
+CREATE INDEX idx_swipes_match ON swipes (loungeId, filmId) WHERE value = 1; -- helps with match finding
 ```
