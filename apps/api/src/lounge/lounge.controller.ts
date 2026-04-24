@@ -43,7 +43,7 @@ export const loungeController = new Elysia()
       LOUNGE_MISSING: 404,
       NOT_CREATOR:    403,
       LOUNGE_ENDED:   409
-    }
+    } as const
 
     return status(codes[result.error], { type: result.error })
   }, {
@@ -104,7 +104,7 @@ export const loungeController = new Elysia()
     if (result.ok) return { unswipedFilms: result.unswipedFilms }
 
     const codes = {
-      FILMS_PENDING:      202,
+      FILMS_PENDING:      503,
       LOUNGE_ENDED:       409,
       LOUNGE_NOT_STARTED: 409,
       LOUNGE_MISSING:     404,
@@ -113,7 +113,8 @@ export const loungeController = new Elysia()
 
     return status(codes[result.error], { type: result.error })
   }, {
-    auth: true
+    auth:   true,
+    params: t.Object({ loungeId: LoungeIdSchema })
   })
 
   // Remove participant from lounge either by KICKING or voluntary LEAVING
@@ -137,8 +138,7 @@ export const loungeController = new Elysia()
       } as const
 
       return status(codes[result.error], { type: result.error })
-    },
-    {
+    }, {
       auth:   true,
       params: t.Object({ loungeId: LoungeIdSchema, participantId: UserIdSchema })
     })
