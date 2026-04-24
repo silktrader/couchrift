@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
-  removeLoungeParticipant, removeLounge, startLounge
+  removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 import {
@@ -94,6 +94,26 @@ export const loungeController = new Elysia()
   }, {
     auth:   true,
     params: t.Object({ loungeId: LoungeIdSchema })
+  })
+
+  // Return lounge cached films that weren't swiped by the user
+  .get('api/lounges/:loungeId/films/unswiped/me', async ({ user, status, params: { loungeId } }) => {
+
+    // TODO: Validate `needed` parameter if introduced
+    const result = getUnswipedFilms(loungeId, user.id)
+    if (result.ok) return { unswipedFilms: result.unswipedFilms }
+
+    const codes = {
+      FILMS_PENDING:      202,
+      LOUNGE_ENDED:       409,
+      LOUNGE_NOT_STARTED: 409,
+      LOUNGE_MISSING:     404,
+      FORBIDDEN_ACCESS:   403
+    } as const
+
+    return status(codes[result.error], { type: result.error })
+  }, {
+    auth: true
   })
 
   // Remove participant from lounge either by KICKING or voluntary LEAVING

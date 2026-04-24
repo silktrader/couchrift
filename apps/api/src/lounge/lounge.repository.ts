@@ -3,6 +3,7 @@ import type { AddLoungeData } from './lounge.models'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
+import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
 export function addLounge(data: AddLoungeData) {
   const tx = db.transaction(() => {
@@ -124,6 +125,22 @@ export function findActiveUserLounges(userId: string) {
   `).all({ userId })
 }
 
+export function getLoungeData(loungeId: string) {
+  return db.query<
+    { creatorId: string, startedAt: number, endedAt: number, settings: string, participantIds: string[] }, {
+    loungeId: string
+  }>(`
+      SELECT creatorId,
+             startedAt,
+             endedAt,
+             settings,
+             json_group_array(u.id) AS participantIds
+      FROM lounges l
+               LEFT JOIN lounge_participants lp on lp.loungeId = l.id
+               LEFT JOIN users u ON u.id = lp.participantId
+      WHERE l.id = @loungeId`).get({ loungeId })
+}
+
 export function deleteLoungeParticipant(participantId: string, requesterId: string, loungeId: string) {
   return runTransactionWithRollback(() => {
     // Run pre-write checks
@@ -243,4 +260,37 @@ export function setLoungeStartWithInitialFilms(loungeId: string, requesterId: st
 
     return succeed({ startedAt })
   })
+}
+
+export function selectUnswipedFilms(loungeId: string, userId: string, needed: number): ReadonlyArray<TmdbFilm> {
+  const rows = db.query<
+    Omit<TmdbFilm, 'genres'> & { genres: string },
+    { userId: string, loungeId: string, needed: number }>(`
+      SELECT films.id,
+             title,
+             language,
+             year,
+             runtime,
+             poster,
+             backdrop,
+             overview,
+             json_group_array(DISTINCT g.name) AS genres
+      FROM lounge_films
+               JOIN films ON films.id = lounge_films.filmId
+               LEFT JOIN film_genres AS fg ON fg.film_id = lounge_films.filmId
+               LEFT JOIN genres g ON g.id = fg.genre_id
+      WHERE loungeId = @loungeId
+        AND lounge_films.filmId NOT IN (SELECT filmId
+                                        FROM swipes
+                                        WHERE loungeId = @loungeId
+                                          AND userId = @userId)
+      GROUP BY films.id
+      ORDER BY random()
+      LIMIT @needed
+  `).all({ userId, loungeId, needed })
+
+  return rows.map((film) => ({
+    ...film,
+    genres: JSON.parse(film.genres) as string[]
+  }))
 }

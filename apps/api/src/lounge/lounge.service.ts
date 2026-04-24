@@ -1,10 +1,11 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
-  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms
+  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
+import { fail, succeed } from '@couchrift/shared/utilities'
 
 export type CreateLoungeResult = { ok: true; shortcode: Shortcode } | { ok: false; error: 'DB_ERROR' }
 
@@ -87,5 +88,33 @@ export function getLoungeParticipant(userId: string, loungeId: string) {
 }
 
 export function startLounge(loungeId: string, creatorId: string) {
-  return setLoungeStartWithInitialFilms(loungeId, creatorId, 30) // tk export film per participant
+  // TODO: Export film per participant
+  return setLoungeStartWithInitialFilms(loungeId, creatorId, 30)
+}
+
+export function getUnswipedFilms(loungeId: string, userId: string) {
+  // Check lounge state but don't start a transaction.
+  // The early exits allow to distinguish between cases when a lounge film refill is or isn't needed.
+  const lounge = getLoungeData(loungeId)
+
+  if (!lounge) return fail('LOUNGE_MISSING')
+  if (lounge.startedAt === null) return fail('LOUNGE_NOT_STARTED')
+  if (lounge.endedAt) return fail('LOUNGE_ENDED')
+  if (!lounge.participantIds.includes(userId)) return fail('FORBIDDEN_ACCESS')
+
+  // Determine how many films to fetch (based on settings, or client request)
+  // TODO: Export or derive quantity.
+  const needed = 15
+
+  // Get randomly ordered lounge films the user hasn't swiped yet.
+  const unswipedFilms = selectUnswipedFilms(loungeId, userId, needed)
+
+  // Trigger a new film ingestion when there are fewer lounge films than needed
+  if (unswipedFilms.length === 0) return fail('FILMS_PENDING')
+
+  // TODO: Check the length of the films cache for next requests.
+  // TODO: Trigger cache refill when the remaining films are fewer than X.
+
+  // Return however many films are available
+  return succeed({ unswipedFilms })
 }
