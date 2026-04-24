@@ -11,4 +11,5 @@ export const load: LayoutLoad = async ({ params, fetch }) => {
     // SvelteKit will render the nearest +error.svelte
   }
   throw error(404, 'Lounge not found')
+  // redirect to a page that invites to join the lounge depending on error tk
 }

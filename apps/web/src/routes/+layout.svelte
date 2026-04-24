@@ -17,7 +17,7 @@
       class="
         flex flex-col w-full p-4
         min-h-svh
-        outline-1
+        md:outline-1
         md:max-w-lg
         md:min-h-[60vh]
         md:rounded-3xl
