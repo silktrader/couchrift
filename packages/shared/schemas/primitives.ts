@@ -38,3 +38,5 @@ export const LoungeParticipantSchema = Type.Object({
   image: Type.Optional(Type.Union([Type.String(), Type.Null(), Type.Undefined()]))
 })
 export type LoungeParticipant = Static<typeof LoungeParticipantSchema>
+
+export const FilmIdSchema = Type.Integer({ minimum: 0 })

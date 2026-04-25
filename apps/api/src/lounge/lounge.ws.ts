@@ -3,6 +3,7 @@ import { type LoungeParticipant, LoungeIdSchema } from '@couchrift/shared/schema
 import { betterAuth } from '../lib/auth-plugin'
 import { getLoungeParticipant } from './lounge.service'
 import type { WsLoungeEvent } from '@couchrift/shared/schemas/ws-lounge-event'
+import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
 type wsConnection = {
   socket: {
@@ -61,6 +62,10 @@ export function broadcastLoungeRemoved(loungeId: string) {
 
 export function broadcastLoungeStarted(loungeId: string, startedAt: number) {
   broadcast(loungeId, { type: 'lounge_started', data: { startedAt } })
+}
+
+export function broadcastLoungeMatch(loungeId: string, match: TmdbFilm) {
+  broadcast(loungeId, { type: 'lounge_matched', match })
 }
 
 export const loungeWsController = new Elysia()

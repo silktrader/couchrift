@@ -2,13 +2,13 @@ import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
-  removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms
+  removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 import {
   broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved, broadcastLoungeStarted
 } from './lounge.ws'
-import { ShortcodeSchema, LoungeIdSchema, UserIdSchema } from '@couchrift/shared/schemas/primitives'
+import { ShortcodeSchema, LoungeIdSchema, UserIdSchema, FilmIdSchema } from '@couchrift/shared/schemas/primitives'
 
 export const loungeController = new Elysia()
   .use(betterAuth)
@@ -78,7 +78,7 @@ export const loungeController = new Elysia()
 
     const result = startLounge(loungeId, user.id)
     if (result.ok) {
-      broadcastLoungeStarted(loungeId, result.startedAt)
+      broadcastLoungeStarted(loungeId, result.data)
       return status(204)
     }
 
@@ -101,7 +101,7 @@ export const loungeController = new Elysia()
 
     // TODO: Validate `needed` parameter if introduced
     const result = getUnswipedFilms(loungeId, user.id)
-    if (result.ok) return { unswipedFilms: result.unswipedFilms }
+    if (result.ok) return { unswipedFilms: result.data }
 
     const codes = {
       FILMS_PENDING:      503,
@@ -123,9 +123,9 @@ export const loungeController = new Elysia()
       const result = removeLoungeParticipant(participantId, user.id, loungeId)
       if (result.ok) {
         if (user.id === participantId)
-          broadcastUserLeft(loungeId, result.user)
+          broadcastUserLeft(loungeId, result.data)
         else
-          broadcastUserRemoved(loungeId, result.user)
+          broadcastUserRemoved(loungeId, result.data)
         return status(204)
       }
 
@@ -161,4 +161,25 @@ export const loungeController = new Elysia()
   }, {
     auth:   true,
     params: t.Object({ shortcode: ShortcodeSchema })
+  })
+
+  // Register swipes
+  .post('/api/lounges/:loungeId/swipes', async ({ user, status, body, params: { loungeId } }) => {
+
+    const result = saveSwipe({ loungeId, userId: user.id, ...body })
+    if (result.ok) return status(204)
+
+    const codes = {
+      LOUNGE_MISSING:   404,
+      LOUNGE_ENDED:     409,
+      LOUNGE_UNSTARTED: 409,
+      FORBIDDEN_SWIPE:  403,
+      ALREADY_SWIPED:   409
+    } as const
+
+    return status(codes[result.error], { type: result.error })
+  }, {
+    auth:   true,
+    params: t.Object({ loungeId: LoungeIdSchema }),
+    body:   t.Object({ filmId: FilmIdSchema, like: t.Boolean() })
   })

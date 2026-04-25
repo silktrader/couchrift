@@ -1,33 +1,34 @@
-type Empty = Record<never, never>
+export type Success<T = void> = { readonly ok: true, readonly data: T };
 
-// Prevents overriding `ok` in the success payload
-type NoOk = { ok?: never }
+export type Failure<E extends string> = {
+  readonly ok: false;
+  readonly error: E;
+}
 
-export type Failure<E extends string> =
-  | { readonly ok: false, readonly error: E }
-  | { readonly ok: false, readonly error: E, readonly details: string }
+export type FailureWithDetails<E extends string> = {
+  readonly ok: false;
+  readonly error: E;
+  readonly details: string;
+}
 
-type SuccessPayload = Record<string, unknown> & NoOk
+export type Result<T = void, E extends string = never, D extends string = never> =
+  | Success<T>
+  | Failure<E>
+  | FailureWithDetails<D>;
 
-export type Success<T extends SuccessPayload = Empty> = ({ readonly ok: true } & Readonly<T>)
+export function succeed<T>(data: T): Success<T>
+export function succeed(): Success
 
-export type Result<E extends string, T extends SuccessPayload = Empty> = Success<T> | Failure<E>
+// Catch-all implementation that callers never see
+export function succeed(data?: unknown): Success<unknown> {
+  // Simplified: standard JS object creation handles `undefined` perfectly well here.
+  return { ok: true, data }
+}
 
-export function fail<const E extends string>(error: E): Failure<E> {
+export function fail<E extends string>(error: E): Failure<E> {
   return { ok: false, error }
 }
 
-export function failWithDetails<const E extends string>(error: E, details: string):
-  Failure<E> {
+export function failWithDetails<E extends string>(error: E, details: string): FailureWithDetails<E> {
   return { ok: false, error, details }
-}
-
-export function succeed<const T extends SuccessPayload>(value: T): Success<T>
-
-export function succeed(): Success
-
-export function succeed(value?: NoOk) {
-  if (value == null)
-    return { ok: true }
-  return { ok: true, ...value }
 }

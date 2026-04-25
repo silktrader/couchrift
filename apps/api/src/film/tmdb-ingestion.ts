@@ -1,5 +1,5 @@
 import {
-  getOldestGenreUpdate, insertGenres, insertFilm, countFilms, selectExistingFilmIds
+  getOldestGenreUpdate, insertGenres, insertFilm, countFilms, getExistingFilmIds
 } from './film.repository'
 import { TMDB } from './tmdb-config'
 import type { TmdbGenre, TmdbFilmDiscover, TmdbFilmData, TmdbDiscoverResponse } from './film.models'
@@ -45,7 +45,7 @@ async function updateGenres() {
 
   const result = await fetchGenres()
   if (result.ok) {
-    insertGenres(result.genres)
+    insertGenres(result.data.genres)
     console.log('[TMDB] ✅ Updated genres.')
     return
   }
@@ -99,7 +99,8 @@ async function ingestTmdbFilms() {
   console.log(`[TMDB] ✅ Fetched random page containing ${filteredFilms.length} films.`)
 
   // Shorten the list of films to fetch by removing the ones already present in the DB
-  const existingIds = selectExistingFilmIds(filteredFilms.map(f => f.id))
+  const existingFilms = getExistingFilmIds(filteredFilms.map(f => f.id))
+  const existingIds = new Set<number>(existingFilms.map(f => f.id))
   const missingFilms = filteredFilms.filter(film => !existingIds.has(film.id))
 
   if (missingFilms.length === 0) {

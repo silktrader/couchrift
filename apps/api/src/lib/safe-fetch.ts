@@ -19,7 +19,7 @@ export async function safeFetch<T>(url: string, options: RequestInit = {}) {
 
   // Handle JSON parsing errors
   try {
-    return succeed({ data: await response.json() as T })
+    return succeed(await response.json() as T)
   } catch (error) {
     return fail('JSON')
   }

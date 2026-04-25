@@ -164,15 +164,21 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 
 ### Error Handling
 
-All service functions return either `Failure` or `Success`:
+All service functions return either `Failure`, `FailureWithDetails` or `Success`:
 
 ```ts
-type Failure<E extends string> =
-  | { readonly ok: false, readonly error: E }
-  | { readonly ok: false, readonly error: E, readonly details: string }
+export type Success<T = void> = { readonly ok: true, readonly data: T };
 
-export type Success<T extends Record<string, unknown> = {}> =
-  { readonly ok: true } & Readonly<Omit<T, 'ok'>>
+export type Failure<E extends string> = {
+  readonly ok: false;
+  readonly error: E;
+}
+
+export type FailureWithDetails<E extends string> = {
+  readonly ok: false;
+  readonly error: E;
+  readonly details: string;
+}
 ```
 
 Errors are:

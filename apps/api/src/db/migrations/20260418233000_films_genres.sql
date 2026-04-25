@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS films (
     language TEXT    NOT NULL CHECK (length(language) = 2), -- ISO 639-1
     year     INTEGER NOT NULL CHECK (year >= 1888),
     runtime  INTEGER NOT NULL CHECK (runtime > 0),
-    added    INTEGER NOT NULL,
+    added    INTEGER NOT NULL,                              -- ingestion timestamp
     poster   TEXT    NOT NULL,
     backdrop TEXT    NOT NULL,
     overview TEXT    NOT NULL

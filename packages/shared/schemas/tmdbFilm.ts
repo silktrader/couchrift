@@ -1,9 +1,10 @@
 import { Type, type Static } from '@sinclair/typebox'
 import { filmConfig } from '../config/film.ts'
+import { FilmIdSchema } from './primitives.ts'
 
 // Response used to provide swipeable films to clients.
 export const TmdbFilmSchema = Type.Object({
-  id:       Type.Integer({ minimum: 0 }),
+  id:       FilmIdSchema,
   title:    Type.String(),
   language: Type.String({ minLength: 2, maxLength: 2 }),
   year:     Type.Integer({ minimum: filmConfig.year.min }),

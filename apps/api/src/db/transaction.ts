@@ -11,8 +11,8 @@ class TransactionRollback<T> extends Error {
  * Wraps the provided function within an `IMMEDIATE` transaction that detects `Failure` return types
  * and throws exceptions for rollbacks.
  */
-export function runTransactionWithRollback<E extends string, T extends Success>(
-  fn: () => T | Failure<E>): T | Failure<E> {
+export function runTransactionWithRollback<E extends string, T>(
+  fn: () => Success<T> | Failure<E>): Success<T> | Failure<E> {
   const tx = db.transaction(() => {
     const result = fn()
 

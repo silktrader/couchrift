@@ -1,11 +1,14 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
-  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData
+  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData, insertSwipe
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
+import type { AddSwipeData } from './lounge.models.ts'
+import { getFilmDetails } from '../film/film.repository.ts'
+import { broadcastLoungeMatch } from './lounge.ws.ts'
 
 export type CreateLoungeResult = { ok: true; shortcode: Shortcode } | { ok: false; error: 'DB_ERROR' }
 
@@ -116,5 +119,23 @@ export function getUnswipedFilms(loungeId: string, userId: string) {
   // TODO: Trigger cache refill when the remaining films are fewer than X.
 
   // Return however many films are available
-  return succeed({ unswipedFilms })
+  return succeed(unswipedFilms)
+}
+
+export function saveSwipe(data: AddSwipeData) {
+
+  // Insert the swipe or fail
+  const result = insertSwipe(data)
+  if (!result.ok) return fail(result.error)
+
+  // Check whether the swipe triggers a match and fetch details
+  if (result.data.match) {
+    const film = getFilmDetails(data.filmId)
+    // possible path when swipes outlive the films they reference
+    // TODO: add DB constraint
+    if (!film) throw new Error('Match detected but film not found.')
+    broadcastLoungeMatch(data.loungeId, film)
+  }
+
+  return succeed()
 }

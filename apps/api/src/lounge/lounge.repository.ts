@@ -4,6 +4,7 @@ import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
 import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
+import type { TmdbFilmRow } from '../film/film.models.ts'
 
 export function addLounge(data: AddLoungeData) {
   const tx = db.transaction(() => {
@@ -177,7 +178,7 @@ export function deleteLoungeParticipant(participantId: string, requesterId: stri
     // Defensive guard for future code changes
     if (changes === 0) throw new Error(`[deleteLoungeParticipant] DELETE affected 0 rows, expected 1`)
 
-    return succeed({ user: { name: lounge.participantName, id: participantId } })
+    return succeed({ name: lounge.participantName, id: participantId })
   })
 }
 
@@ -258,14 +259,12 @@ export function setLoungeStartWithInitialFilms(loungeId: string, requesterId: st
         WHERE id = @loungeId
     `).run({ startedAt, loungeId })
 
-    return succeed({ startedAt })
+    return succeed(startedAt)
   })
 }
 
 export function selectUnswipedFilms(loungeId: string, userId: string, needed: number): ReadonlyArray<TmdbFilm> {
-  const rows = db.query<
-    Omit<TmdbFilm, 'genres'> & { genres: string },
-    { userId: string, loungeId: string, needed: number }>(`
+  const rows = db.query<TmdbFilmRow, { userId: string, loungeId: string, needed: number }>(`
       SELECT films.id,
              title,
              language,
@@ -293,4 +292,74 @@ export function selectUnswipedFilms(loungeId: string, userId: string, needed: nu
     ...film,
     genres: JSON.parse(film.genres) as string[]
   }))
+}
+
+export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: number, like: boolean }) {
+
+  const { loungeId, userId, filmId } = swipe
+
+  return runTransactionWithRollback(() => {
+
+      // Run preliminary checks and count current film likes.
+      const lounge = db.query<{
+        creatorId: string,
+        startedAt: number | null,
+        endedAt: number | null,
+        participantsCount: number,
+        isParticipant: boolean
+      }, {
+        loungeId: string, userId: string
+      }>(`
+          SELECT startedAt,
+                 endedAt,
+                 (SELECT COUNT(*)
+                  FROM lounge_participants
+                  WHERE loungeId = lounges.id)         AS participantsCount,
+                 EXISTS(SELECT 1
+                        FROM lounge_participants
+                        WHERE loungeId = lounges.id
+                          AND participantId = @userId) AS isParticipant
+          FROM lounges
+          WHERE id = @loungeId
+      `).get({ loungeId, userId })
+
+      if (!lounge) return fail('LOUNGE_MISSING')
+      if (!lounge.startedAt) return fail('LOUNGE_UNSTARTED')
+      if (lounge.endedAt) return fail('LOUNGE_ENDED')
+      if (!lounge.isParticipant) return fail('FORBIDDEN_SWIPE')
+
+      // Insert the swipe
+      const { changes } = db.query(`
+          INSERT INTO swipes (loungeId, userId, filmId, swipedAt, value)
+          VALUES (@loungeId, @userId, @filmId, @swipedAt, @value)
+          ON CONFLICT(loungeId, userId, filmId) DO NOTHING
+      `).run({ loungeId, userId, filmId, swipedAt: Date.now(), value: swipe.like ? 1 : -1 })
+
+      if (changes !== 1) return fail('ALREADY_SWIPED')
+
+      if (!swipe.like) return succeed({ match: false })
+
+      // Check for matches
+      const { likeCount } = db.query<{ likeCount: number }, { loungeId: string, filmId: number }>(`
+          SELECT COUNT(*) AS likeCount
+          FROM swipes
+          WHERE loungeId = @loungeId
+            AND filmId = @filmId
+            AND value = 1
+      `).get({ loungeId, filmId })! // safe due to insertion
+
+      const match = likeCount === lounge.participantsCount
+
+      if (match) {
+        const update = db.query(`
+            UPDATE lounges
+            SET endedAt = @endedAt
+            WHERE id = @loungeId`).run({ endedAt: Date.now(), loungeId })
+        if (update.changes === 1) return succeed({ match: true, filmId })
+        throw new Error('Unable to update lounge state')
+      }
+
+      return succeed({ match: false })
+    }
+  )
 }

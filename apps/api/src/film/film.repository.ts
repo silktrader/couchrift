@@ -1,5 +1,5 @@
 import db from '../db'
-import type { TmdbGenre, TmdbFilmData } from './film.models'
+import type { TmdbGenre, TmdbFilmData, TmdbFilmRow } from './film.models'
 
 export function getOldestGenreUpdate() {
   return db.query(`
@@ -30,14 +30,12 @@ export function countFilms(): number {
 }
 
 // Fetch the IDs provided by `ids` that are already present in `films`.
-export function selectExistingFilmIds(ids: number[]): Set<number> {
-  const existing = db.query<{ id: number }, { ids: string }>(`
+export function getExistingFilmIds(ids: number[]) {
+  return db.query<{ id: number }, { ids: string }>(`
       SELECT id
       FROM films
       WHERE id IN (SELECT value FROM json_each(@ids))
   `).all({ ids: JSON.stringify(ids) })
-
-  return new Set(existing.map(r => r.id))
 }
 
 export function insertFilm(film: TmdbFilmData) {
@@ -75,4 +73,22 @@ export function insertFilm(film: TmdbFilmData) {
   })
 
   tx.immediate(film)
+}
+
+export function getFilmDetails(filmId: number) {
+  const filmRow = db.query<TmdbFilmRow, { filmId: number }>(`
+      SELECT f.id,
+             title,
+             language,
+             year,
+             runtime,
+             poster,
+             backdrop,
+             overview,
+             json_group_array(DISTINCT g.name) AS genres
+      FROM films f
+               LEFT JOIN film_genres fg ON f.id = fg.film_id
+               LEFT JOIN genres g ON g.id = fg.genre_id
+      WHERE f.id = @filmId`).get({ filmId })
+  return filmRow && { ...filmRow, genres: JSON.parse(filmRow.genres) as string[] }
 }

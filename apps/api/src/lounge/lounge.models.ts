@@ -7,3 +7,11 @@ export interface AddLoungeData {
     maxDuration: number
   }
 }
+
+// Used by the "Add Swipe" endpoint.
+export interface AddSwipeData {
+  loungeId: string,
+  userId: string,
+  filmId: number,
+  like: boolean
+}

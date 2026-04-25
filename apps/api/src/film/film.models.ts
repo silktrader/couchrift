@@ -1,3 +1,5 @@
+import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
+
 export interface TmdbGenre {
   id: number
   name: string
@@ -36,3 +38,6 @@ export interface TmdbFilmData {
   genres: { id: number, name: string }[]
   vote_average: number
 }
+
+// Returned by DB queries
+export type TmdbFilmRow = Omit<TmdbFilm, 'genres'> & { genres: string }
