@@ -62,29 +62,46 @@ export class LoungeService {
     const existingIds = new Set(this._films.map(f => f.id))
     for (const film of data.unswipedFilms) {
       if (!existingIds.has(film.id))
-        this._films.push(film)
+        this._films.push(film) // adds elements to the end
     }
 
     return succeed()
   }
 
+  // Send swipe requests
+  public async sendSwipe(filmId: number, value: -1 | 1) {
+    const { error } = await client.api.lounges({ loungeId: this.lounge.id })
+                                  .swipes
+                                  .post({ filmId, like: value === 1 })
+
+    if (error) return fail(error.value.type)
+
+    // Remove the film from the stack when the swipe is successful, regardless of value
+    this._films.pop()
+    return succeed()
+  }
+
   private registerHandlers() {
-    this.ws.on('user_joined', (event) => {
+    this.ws.on('user_joined', event => {
       this.addParticipant(event.user)
       this.emit(event)
     })
 
-    this.ws.on('user_left', (event) => {
+    this.ws.on('user_left', event => {
       this.removeParticipant(event.user.id)
       this.emit(event)
     })
 
-    this.ws.on('user_removed', (event) => {
+    this.ws.on('user_removed', event => {
       this.removeParticipant(event.user.id)
       this.emit(event)
     })
 
-    this.ws.on('lounge_deleted', (event) => {
+    this.ws.on('lounge_deleted', event => {
+      this.emit(event)
+    })
+
+    this.ws.on('lounge_matched', event => {
       this.emit(event)
     })
   }
@@ -104,8 +121,7 @@ export class LoungeService {
 
 export const [getLoungeContext, setLoungeContext] = createContext<LoungeService>()
 
-export async function createLounge(settings: LoungeSettings):
-  Promise<{ ok: true; shortcode: string } | { ok: false; error: string }> {
+export async function createLounge(settings: LoungeSettings) {
   const result = await apiPost<LoungeCreateResponse>('lounges', { settings })
   switch (result.type) {
     case 'success':

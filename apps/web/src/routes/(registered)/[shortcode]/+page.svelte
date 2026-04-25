@@ -30,12 +30,44 @@
     if (ls.lounge.startedAt && !ls.lounge.endedAt && ls.films.length < 5) fetchMoreFilms()
   })
 
-  const film = $derived(ls.films.at(0))
+  $effect(() => {
+    const subscriptions: (() => void)[] = []
+
+    subscriptions.push(
+      ls.onEvent((event) => {
+        if (event.type === 'lounge_matched') {
+          toast.success(`We have a match! ${event.match.title}`)
+        }
+      })
+    )
+
+    return () => subscriptions.forEach((unsub) => unsub())
+  })
+
+  const film = $derived(ls.films.at(-1))
   const flag = $derived.by(() => {
     if (!film) return ''
     const mapping = langToCountry[film.language]
     return mapping ?? film.language
   })
+
+  async function handleLike() {
+    await handleSendSwipe(1)
+  }
+
+  async function handleDislike() {
+    await handleSendSwipe(-1)
+  }
+
+  async function handleSendSwipe(value: 1 | -1) {
+    if (!film) return
+    const { id, title } = film
+    const result = await ls.sendSwipe(id, value)
+
+    if (!result.ok) {
+      toast.error(`Couldn't swipe ${title} .`)
+    }
+  }
 
 </script>
 
@@ -105,10 +137,10 @@
         </section>
 
         <section class="flex justify-around">
-          <Button size="icon" variant="outline" class="rounded-full h-18 w-18 border-2">
+          <Button size="icon" variant="outline" class="rounded-full h-18 w-18 border-2" onclick={handleDislike}>
             <X class="size-8"/>
           </Button>
-          <Button size="icon" class="rounded-full h-18 w-18">
+          <Button size="icon" class="rounded-full h-18 w-18" onclick={handleLike}>
             <Heart class="size-8 fill-background stroke-background"/>
           </Button>
         </section>
