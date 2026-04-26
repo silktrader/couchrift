@@ -1,7 +1,9 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
-  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData, insertSwipe
+  selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData,
+  insertSwipe,
+  getEndedLounge, getLoungeParticipants, getLoungeMatches
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -138,4 +140,25 @@ export function saveSwipe(data: AddSwipeData) {
   }
 
   return succeed()
+}
+
+export function getEndedLoungeDetails(loungeId: string, userId: string) {
+  // No transaction required as the state of ended lounges is frozen
+  // Run separate queries without performance hits thanks to SQLite in-process nature
+  const lounge = getEndedLounge(loungeId)
+  if (!lounge) return fail('LOUNGE_MISSING')
+
+  // Get participants and check user membership
+  const participants = getLoungeParticipants(loungeId)
+  if (!participants.some(p => p.id === userId)) return fail('FORBIDDEN_ACCESS')
+
+  /// Get matches and check for existence
+  const matches = getLoungeMatches(loungeId)
+  if (matches.length === 0) throw new Error('Expected matches from ended lounge but found none.')
+
+  return succeed({
+    ...lounge,
+    participants: participants,
+    matches:      matches
+  })
 }

@@ -57,12 +57,13 @@ export function deleteLounge(loungeId: string, requesterId: string) {
 
 // Looks up lounges, active or otherwise, by their shortcode.
 export function findLoungeByCode(shortcode: string, userId: string): LoungeResponse | null {
+// TODO: investigate need for userId
   const lounge = db.query<{
     id: string
     creatorId: string
     createdAt: number
-    startedAt: number
-    endedAt: number
+    startedAt: number | null
+    endedAt: number | null
     settings: string
     participants: string
   }, { shortcode: string, userId: string }>(`
@@ -370,4 +371,68 @@ export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: n
       return succeed({ match: true, filmId })
     }
   )
+}
+
+export function getEndedLounge(loungeId: string) {
+  const lounge = db.query<{
+    shortcode: string
+    creatorId: string
+    createdAt: number
+    startedAt: number
+    endedAt: number
+    settings: string
+  }, { loungeId: string }>(`
+      SELECT l.shortcode,
+             l.creatorId,
+             l.createdAt,
+             l.startedAt,
+             l.endedAt,
+             l.settings
+      FROM lounges l
+      WHERE l.id = @loungeId
+        AND endedAt IS NOT NULL
+  `).get({ loungeId })
+
+  if (lounge) return {
+    ...lounge,
+    settings: JSON.parse(lounge.settings)
+  }
+  return null
+}
+
+export function getLoungeParticipants(loungeId: string) {
+  return db.query<{
+    id: string;
+    name: string;
+    image: string | null;
+  }, { loungeId: string }>(`
+      SELECT id, name, image
+      FROM lounge_participants lp
+               LEFT JOIN users ON lp.participantId = users.id
+      WHERE lp.loungeId = @loungeId
+  `).all({ loungeId })
+}
+
+export function getLoungeMatches(loungeId: string) {
+  const matches = db.query<TmdbFilmRow & { matchedAt: number }, { loungeId: string }>(`
+      SELECT lm.filmId                         AS id,
+             title,
+             language,
+             year,
+             runtime,
+             poster,
+             backdrop,
+             overview,
+             matchedAt,
+             json_group_array(DISTINCT g.name) AS genres
+      FROM lounge_matches lm
+               LEFT JOIN films ON filmId = lm.filmId
+               LEFT JOIN film_genres AS fg ON fg.film_id = lm.filmId
+               LEFT JOIN genres g ON g.id = fg.genre_id
+      WHERE loungeId = @loungeId
+      GROUP BY lm.filmId, matchedAt
+      ORDER BY matchedAt
+  `).all({ loungeId })
+
+  return matches.map(m => ({ ...m, genres: JSON.parse(m.genres) }))
 }

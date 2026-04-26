@@ -2,7 +2,8 @@ import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
-  removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe
+  removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe,
+  getEndedLoungeDetails
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 import {
@@ -49,6 +50,22 @@ export const loungeController = new Elysia()
   }, {
     auth:   true,
     params: t.Object({ loungeId: LoungeIdSchema })
+  })
+
+  // Fetch completed lounges by ID
+  .get('/api/lounges/ended/:id', async ({ user, status, params: { id } }) => {
+    const result = getEndedLoungeDetails(id, user.id)
+    if (result.ok) return { lounge: result.data }
+
+    const code = {
+      LOUNGE_MISSING:   404,
+      FORBIDDEN_ACCESS: 403
+    } as const
+
+    return status(code[result.error], { type: result.error })
+  }, {
+    auth:   true,
+    params: t.Object({ id: LoungeIdSchema })
   })
 
   // Fetch lounge data by shortcode
