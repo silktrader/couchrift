@@ -299,7 +299,6 @@ export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: n
   const { loungeId, userId, filmId } = swipe
 
   return runTransactionWithRollback(() => {
-
       // Run preliminary checks and count current film likes.
       const lounge = db.query<{
         creatorId: string,
@@ -328,15 +327,19 @@ export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: n
       if (lounge.endedAt) return fail('LOUNGE_ENDED')
       if (!lounge.isParticipant) return fail('FORBIDDEN_SWIPE')
 
+      // Set a single timestamp for all operations
+      const now = Date.now()
+
       // Insert the swipe
       const { changes } = db.query(`
           INSERT INTO swipes (loungeId, userId, filmId, swipedAt, value)
           VALUES (@loungeId, @userId, @filmId, @swipedAt, @value)
           ON CONFLICT(loungeId, userId, filmId) DO NOTHING
-      `).run({ loungeId, userId, filmId, swipedAt: Date.now(), value: swipe.like ? 1 : -1 })
+      `).run({ loungeId, userId, filmId, swipedAt: now, value: swipe.like ? 1 : -1 })
 
       if (changes !== 1) return fail('ALREADY_SWIPED')
 
+      // Dislikes can't trigger a match; exit early
       if (!swipe.like) return succeed({ match: false })
 
       // Check for matches
@@ -346,20 +349,25 @@ export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: n
           WHERE loungeId = @loungeId
             AND filmId = @filmId
             AND value = 1
-      `).get({ loungeId, filmId })! // safe due to insertion
+      `).get({ loungeId, filmId })! // safe due to previous insertion
 
-      const match = likeCount === lounge.participantsCount
+      // Detect a non-match
+      if (likeCount !== lounge.participantsCount) return succeed({ match: false })
 
-      if (match) {
-        const update = db.query(`
-            UPDATE lounges
-            SET endedAt = @endedAt
-            WHERE id = @loungeId`).run({ endedAt: Date.now(), loungeId })
-        if (update.changes === 1) return succeed({ match: true, filmId })
-        throw new Error('Unable to update lounge state')
-      }
+      // Update lounge state and insert match entry
+      const updateLounge = db.query(`
+          UPDATE lounges
+          SET endedAt = @endedAt
+          WHERE id = @loungeId
+      `).run({ endedAt: now, loungeId })
+      if (!updateLounge.changes) throw new Error('Lounge update failed') // defensive guard, should not reach
 
-      return succeed({ match: false })
+      const matchInsert = db.query(`
+          INSERT INTO lounge_matches (loungeId, filmId, matchedAt)
+          VALUES (@loungeId, @filmId, @matchedAt)
+      `).run({ loungeId, filmId, matchedAt: now })
+      if (!matchInsert.changes) throw new Error('Match insertion failed') // defensive guard, should not reach
+      return succeed({ match: true, filmId })
     }
   )
 }
