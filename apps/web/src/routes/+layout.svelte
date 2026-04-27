@@ -23,6 +23,7 @@
         md:rounded-3xl
         md:border-2
       md:border-neutral-900
+      gap-6
     "
   >
     {@render children()}

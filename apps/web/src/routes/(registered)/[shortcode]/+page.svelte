@@ -1,6 +1,5 @@
 <script lang="ts">
   import { getLoungeContext } from '$lib/loungeService.svelte'
-  import { getUserContext } from '$lib/userService.svelte'
   import { Button } from '$lib/components/ui/button'
   import * as Tabs from '$lib/components/ui/tabs'
   import { Badge } from '$lib/components/ui/badge'
