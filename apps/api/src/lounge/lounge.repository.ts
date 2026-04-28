@@ -127,6 +127,17 @@ export function findActiveUserLounges(userId: string) {
   `).all({ userId })
 }
 
+export function getUserEndedLounges(userId: string, max: number) {
+  return db.query<{ id: string, creatorId: string, endedAt: number }, { userId: string, max: number }>(`
+      SELECT id, creatorId, endedAt
+      FROM lounge_participants lp
+               JOIN lounges l ON lp.loungeId = l.id
+      WHERE endedAt IS NOT NULL
+        AND lp.participantId = @userId
+      LIMIT @max
+  `).all({ userId, max })
+}
+
 export function getLoungeData(loungeId: string) {
   return db.query<
     { creatorId: string, startedAt: number, endedAt: number, settings: string, participantIds: string[] }, {
@@ -413,7 +424,7 @@ export function getLoungeParticipants(loungeId: string) {
   `).all({ loungeId })
 }
 
-export function getLoungeMatches(loungeId: string) {
+export function getEndedLoungeMatches(loungeId: string) {
   const matches = db.query<TmdbFilmRow & { matchedAt: number }, { loungeId: string }>(`
       SELECT lm.filmId                         AS id,
              title,
@@ -434,5 +445,8 @@ export function getLoungeMatches(loungeId: string) {
       ORDER BY matchedAt
   `).all({ loungeId })
 
+  // Must expect matches in ended lounges
+  if (matches.length === 0) throw new Error('Expected matches but none found.')
   return matches.map(m => ({ ...m, genres: JSON.parse(m.genres) }))
 }
+

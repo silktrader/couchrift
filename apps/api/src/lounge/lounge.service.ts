@@ -3,7 +3,7 @@ import {
   addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData,
   insertSwipe,
-  getEndedLounge, getLoungeParticipants, getLoungeMatches
+  getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
@@ -50,7 +50,7 @@ export function getActiveLoungeByCode(shortcode: string, userId: string):
 }
 
 // Get active lounges the user has joined or created.
-export function getActiveUserLounges(userId: string) {
+export function getUserActiveLoungesWithDetails(userId: string) {
   const rows = findActiveUserLounges(userId)
 
   // Expect only a handful of lounges, avoid hashsets
@@ -142,7 +142,7 @@ export function saveSwipe(data: AddSwipeData) {
   return succeed()
 }
 
-export function getEndedLoungeDetails(loungeId: string, userId: string) {
+export function getEndedLoungeWithDetails(loungeId: string, userId: string) {
   // No transaction required as the state of ended lounges is frozen
   // Run separate queries without performance hits thanks to SQLite in-process nature
   const lounge = getEndedLounge(loungeId)
@@ -153,12 +153,22 @@ export function getEndedLoungeDetails(loungeId: string, userId: string) {
   if (!participants.some(p => p.id === userId)) return fail('FORBIDDEN_ACCESS')
 
   /// Get matches and check for existence
-  const matches = getLoungeMatches(loungeId)
-  if (matches.length === 0) throw new Error('Expected matches from ended lounge but found none.')
+  const matches = getEndedLoungeMatches(loungeId)
 
   return succeed({
     ...lounge,
     participants: participants,
     matches:      matches
   })
+}
+
+// Fetch the specified `max` number of ended lounges, without read transactions (due to frozen state).
+export function getUserEndedLoungesWithDetails(userId: string, max: number) {
+  return getUserEndedLounges(userId, max).map(lounge => (
+    {
+      ...lounge,
+      matches:      getEndedLoungeMatches(lounge.id),
+      participants: getLoungeParticipants(lounge.id)
+    })
+  )
 }

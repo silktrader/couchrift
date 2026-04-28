@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
-  createLounge, getActiveLoungeByCode, getActiveUserLounges, joinLounge,
+  createLounge, getActiveLoungeByCode, getUserActiveLoungesWithDetails, joinLounge,
   removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe,
-  getEndedLoungeDetails
+  getEndedLoungeWithDetails, getUserEndedLoungesWithDetails
 } from './lounge.service'
 import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
 import {
@@ -54,7 +54,7 @@ export const loungeController = new Elysia()
 
   // Fetch completed lounges by ID
   .get('/api/lounges/ended/:id', async ({ user, status, params: { id } }) => {
-    const result = getEndedLoungeDetails(id, user.id)
+    const result = getEndedLoungeWithDetails(id, user.id)
     if (result.ok) return { lounge: result.data }
 
     const code = {
@@ -83,11 +83,32 @@ export const loungeController = new Elysia()
     params: t.Object({ shortcode: ShortcodeSchema })
   })
 
-  // Get user's active lounges
+  // Get the user's active lounges
   .get('/api/me/lounges/active', async ({ user }) => {
-    return { lounges: getActiveUserLounges(user.id) }
+    return { lounges: getUserActiveLoungesWithDetails(user.id) }
   }, {
     auth: true
+  })
+
+  // Get the user's ended lounges
+  .get('/api/me/lounges/ended', async ({ user, query: { max } }) => {
+    return { endedLounges: getUserEndedLoungesWithDetails(user.id, max) }
+  }, {
+    auth:  true,
+    query: t.Object({ max: t.Integer({ minimum: 0 }) })
+  })
+
+  // Get the user's lounges, both active and ended
+  .get('/api/me/lounges', async ({ user, query: { max } }) => {
+    return {
+      lounges: {
+        active: getUserActiveLoungesWithDetails(user.id),
+        ended:  getUserEndedLoungesWithDetails(user.id, max)
+      }
+    }
+  }, {
+    auth:  true,
+    query: t.Object({ max: t.Integer({ minimum: 0 }) })
   })
 
   // Start a lounge and the film selection process
