@@ -4,11 +4,12 @@
   import * as Avatar from '$lib/components/ui/avatar'
   import * as Item from '$lib/components/ui/item'
   import * as InputOTP from '$lib/components/ui/input-otp'
+  import * as UnderlineTabs from '$lib/components/ui/underline-tabs'
   import { FieldSeparator } from '$lib/components/ui/field'
   import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut, CircleAlert, X } from '@lucide/svelte'
   import { goto } from '\$app/navigation'
   import { getUserContext } from '$lib/userService.svelte.js'
-  import { createLounge, leaveLounge, joinLounge } from '$lib/loungeService.svelte.js'
+  import { createLounge, leaveLounge } from '$lib/loungeService.svelte.js'
   import { flip } from 'svelte/animate'
   import { formatRelativeTime } from '$lib/dates'
   import { untrack } from 'svelte'
@@ -20,14 +21,16 @@
   let { data }: PageProps = $props()
 
   const us = getUserContext()
-  let activeLounges = $state(untrack(() => data.lounges))
+  let activeLounges = $state(untrack(() => data.lounges.active))
+  let endedLounges = $state(untrack(() => data.lounges.ended))
+
   let shortcode = $state('')
   let shortcodeError = $state('')
 
   async function handleCreateLounge() {
     const result = await createLounge({ maxDuration: 300 })
     if (result.ok) {
-      await goto(`${result.shortcode}/waiting`)
+      await goto(`${result.data.shortcode}/waiting`)
     } else {
       console.error(result.error)
     }
@@ -114,50 +117,94 @@
   {/if}
 
   <FieldSeparator>or</FieldSeparator>
-  <Button variant="secondary" onclick={async () => await handleCreateLounge()}>Create Lounge</Button>
+  <Button variant="default" onclick={async () => await handleCreateLounge()}>Create Lounge</Button>
 </section>
 
 <!-- Active Lounges -->
 <section class="flex flex-col flex-1 gap-2 items-center">
-  <h4 class="text-muted-foreground">Active Lounges</h4>
-  <div class="flex flex-1 overflow-y-auto min-h-0 w-full flex-col items-center gap-2 p-4 pb-8">
-    {#each activeLounges as lounge (lounge.id)}
+  <UnderlineTabs.Root value="active" class="w-full">
+    <UnderlineTabs.List class="flex justify-center items-center">
+      <UnderlineTabs.Trigger class="text-md" value="active">Active</UnderlineTabs.Trigger>
+      <UnderlineTabs.Trigger class="text-md" value="ended">Ended</UnderlineTabs.Trigger>
+    </UnderlineTabs.List>
 
-      <div class="w-full" animate:flip>
-        <Item.Root variant="outline" class="w-full" onclick={() => goto(`/${lounge.shortcode}`)}>
-          <Item.Media>
-            <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
+    <!-- Active lounges -->
+    <UnderlineTabs.Content value="active">
+      <div class="flex flex-1 overflow-y-auto min-h-0 w-full flex-col items-center gap-2 p-4 pb-8">
+        {#each activeLounges as lounge (lounge.id)}
 
-              {#each lounge.participants as participant (participant.id)}
-                <Avatar.Root class={participant.id === lounge.creatorId ? 'size-12' : 'size-10'}>
-                  {#if participant.image}
-                    <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
-                  {/if}
-                  <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
-                </Avatar.Root>
-              {/each}
-            </div>
-          </Item.Media>
-          <Item.Content class="flex items-end mr-4">
-            <Item.Title class="text-md font-mono font-semibold tracking-wider">{lounge.shortcode}</Item.Title>
-            <Item.Description class="text-sm italic">{formatRelativeTime(lounge.createdAt)}</Item.Description>
-          </Item.Content>
-          <Item.Actions>
-            <Button size="icon" variant="outline"
-                    onclick={async (e) => {
+          <div class="w-full" animate:flip>
+            <Item.Root variant="outline" class="w-full" onclick={() => goto(`/${lounge.shortcode}`)}>
+              <Item.Media>
+                <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
+
+                  {#each lounge.participants as participant (participant.id)}
+                    <Avatar.Root class={participant.id === lounge.creatorId ? 'size-12' : 'size-10'}>
+                      {#if participant.image}
+                        <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
+                      {/if}
+                      <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
+                    </Avatar.Root>
+                  {/each}
+                </div>
+              </Item.Media>
+              <Item.Content class="flex items-end mr-4">
+                <Item.Title class="text-md font-mono font-semibold tracking-wider">{lounge.shortcode}</Item.Title>
+                <Item.Description class="text-sm italic">{formatRelativeTime(lounge.createdAt)}</Item.Description>
+              </Item.Content>
+              <Item.Actions>
+                <Button size="icon" variant="outline"
+                        onclick={async (e) => {
 						          e.stopPropagation()
                       e.preventDefault()
 						          await handleLeaveLounge(lounge.id)}
 						        }>
-              <LogOut/>
-            </Button>
-          </Item.Actions>
-        </Item.Root>
+                  <LogOut/>
+                </Button>
+              </Item.Actions>
+            </Item.Root>
+          </div>
+        {:else}
+          <span class="text-muted-foreground">No active lounges</span>
+        {/each}
       </div>
-    {:else}
-      <span>No active lounges</span>
-    {/each}
-  </div>
+    </UnderlineTabs.Content>
+
+    <!-- Ended lounges -->
+    <UnderlineTabs.Content value="ended">
+      <div class="flex flex-1 overflow-y-auto min-h-0 w-full flex-col items-center gap-2 p-4 pb-8">
+        {#each endedLounges as lounge (lounge.id)}
+
+          <div class="w-full" animate:flip>
+            <Item.Root variant="outline" class="w-full" onclick={() => goto(`/lounges/${lounge.id}`)}>
+              <Item.Media>
+                <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
+
+                  {#each lounge.participants as participant (participant.id)}
+                    <Avatar.Root class={participant.id === lounge.creatorId ? 'size-12' : 'size-10'}>
+                      {#if participant.image}
+                        <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
+                      {/if}
+                      <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
+                    </Avatar.Root>
+                  {/each}
+                </div>
+              </Item.Media>
+              <Item.Content class="flex items-end mr-4">
+                <Item.Title
+                    class="text-md font-mono font-semibold tracking-wider">{lounge.matches[0].title}</Item.Title>
+                <Item.Description class="text-sm italic">{formatRelativeTime(lounge.endedAt)}</Item.Description>
+              </Item.Content>
+
+            </Item.Root>
+          </div>
+        {:else}
+          <span class="text-muted-foreground">No ended lounge</span>
+        {/each}
+      </div>
+    </UnderlineTabs.Content>
+
+  </UnderlineTabs.Root>
 
 </section>
 
