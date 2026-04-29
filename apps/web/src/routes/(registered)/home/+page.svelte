@@ -17,6 +17,7 @@
   import { REGEXP_ONLY_DIGITS_AND_CHARS } from 'bits-ui'
   import { client } from '$lib/et-api'
   import AppHeader from '$lib/components/layout/app-header.svelte'
+  import { Badge } from '$lib/components/ui/badge'
 
   let { data }: PageProps = $props()
 
@@ -33,17 +34,6 @@
       await goto(`${result.data.shortcode}/waiting`)
     } else {
       console.error(result.error)
-    }
-  }
-
-  async function handleLeaveLounge(loungeId: string) {
-    const result = await leaveLounge(loungeId, us.user.id)
-
-    if (result.ok) {
-      activeLounges = activeLounges.filter(lounge => lounge.id !== loungeId)
-      alert('You left the lounge.')
-    } else {
-      alert(result.error)
     }
   }
 
@@ -68,6 +58,11 @@
       default:
         shortcodeError = 'Unknown error occurred.'
     }
+  }
+
+  async function handleGotoLounge(lounge: { shortcode: string, startedAt: number | null }) {
+    if (lounge.startedAt === null) await goto(`/${lounge.shortcode}/waiting`)
+    else await goto(`/${lounge.shortcode}`)
   }
 
 </script>
@@ -134,12 +129,12 @@
         {#each activeLounges as lounge (lounge.id)}
 
           <div class="w-full" animate:flip>
-            <Item.Root variant="outline" class="w-full" onclick={() => goto(`/${lounge.shortcode}`)}>
+            <Item.Root variant="outline" class="w-full" onclick={() => handleGotoLounge(lounge)}>
               <Item.Media>
                 <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
 
                   {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class={participant.id === lounge.creatorId ? 'size-12' : 'size-10'}>
+                    <Avatar.Root class="size-12">
                       {#if participant.image}
                         <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
                       {/if}
@@ -147,21 +142,20 @@
                     </Avatar.Root>
                   {/each}
                 </div>
+
               </Item.Media>
-              <Item.Content class="flex items-end mr-4">
+
+              <!-- Status -->
+              <div class="flex flex-1 justify-end">
+                <Badge class="min-h-5 min-w-5 rounded-full px-1 py-3 [font-variant:small-caps]" variant="secondary">
+                  {lounge.startedAt === null ? 'waiting' : 'started'}
+                </Badge>
+              </div>
+
+              <Item.Content class="flex items-end">
                 <Item.Title class="text-md font-mono font-semibold tracking-wider">{lounge.shortcode}</Item.Title>
                 <Item.Description class="text-sm italic">{formatRelativeTime(lounge.createdAt)}</Item.Description>
               </Item.Content>
-              <Item.Actions>
-                <Button size="icon" variant="outline"
-                        onclick={async (e) => {
-						          e.stopPropagation()
-                      e.preventDefault()
-						          await handleLeaveLounge(lounge.id)}
-						        }>
-                  <LogOut/>
-                </Button>
-              </Item.Actions>
             </Item.Root>
           </div>
         {:else}
@@ -181,7 +175,7 @@
                 <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
 
                   {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class={participant.id === lounge.creatorId ? 'size-12' : 'size-10'}>
+                    <Avatar.Root class="size-12">
                       {#if participant.image}
                         <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
                       {/if}
@@ -190,7 +184,15 @@
                   {/each}
                 </div>
               </Item.Media>
-              <Item.Content class="flex items-end mr-4">
+
+              <!-- Status -->
+              <div class="flex flex-1 justify-end">
+                <Badge class="min-h-5 min-w-5 rounded-full px-1 py-3 [font-variant:small-caps]" variant="secondary">
+                  matched
+                </Badge>
+              </div>
+
+              <Item.Content class="flex items-end">
                 <Item.Title
                     class="text-md font-mono font-semibold tracking-wider">{lounge.matches[0].title}</Item.Title>
                 <Item.Description class="text-sm italic">{formatRelativeTime(lounge.endedAt)}</Item.Description>

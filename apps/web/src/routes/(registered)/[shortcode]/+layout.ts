@@ -1,15 +1,9 @@
 import type { LayoutLoad } from './$types'
-import { error } from '@sveltejs/kit'
-import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
-import { apiGet } from '$lib/apiFetch'
+import { error as svelteError, redirect } from '@sveltejs/kit'
+import { client } from '$lib/et-api'
 
-export const load: LayoutLoad = async ({ params, fetch }) => {
-  const shortcode = params.shortcode
-  const response = await apiGet<LoungeResponse>(`lounges/active/${shortcode}`)
-  if (response.type === 'success') {
-    return { lounge: response.data }
-    // SvelteKit will render the nearest +error.svelte
-  }
-  throw error(404, 'Lounge not found')
-  // redirect to a page that invites to join the lounge depending on error tk
+export const load: LayoutLoad = async ({ params }) => {
+  const { data, error } = await client.api.lounges.active({ shortcode: params.shortcode }).get()
+  if (data) return data
+  svelteError(error.status, { message: 'Error fetching user lounges', type: error.value.type })
 }
