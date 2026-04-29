@@ -55,36 +55,35 @@ export function deleteLounge(loungeId: string, requesterId: string) {
   return tx.immediate() // write lock is acquired at the start
 }
 
-// Looks up lounges, active or otherwise, by their shortcode.
-export function findLoungeByCode(shortcode: string, userId: string): LoungeResponse | null {
-// TODO: investigate need for userId
+// Gets ACTIVE lounge by its code
+export function getActiveLoungeByCode(shortcode: string) {
+  // Fetch data in one snapshot to avoid out of date participants data
   const lounge = db.query<{
     id: string
     creatorId: string
     createdAt: number
     startedAt: number | null
-    endedAt: number | null
     settings: string
     participants: string
-  }, { shortcode: string, userId: string }>(`
+  }, { shortcode: string }>(`
       SELECT l.id,
              l.creatorId,
              l.createdAt,
              l.startedAt,
-             l.endedAt,
              l.settings,
-             json_group_array(json_object(
-                     'id', u.id,
-                     'name', u.name,
-                     'image', u.image,
-                     'disconnectedAt', lp.disconnectedAt
-                              )) AS participants
+             json_group_array(
+                     json_object(
+                             'id', u.id,
+                             'name', u.name,
+                             'image', u.image
+                     )) AS participants
       FROM lounges l
                LEFT JOIN lounge_participants lp ON lp.loungeId = l.id
                LEFT JOIN users u ON u.id = lp.participantId
       WHERE l.shortcode = @shortcode
+        AND endedAt IS NULL
       GROUP BY l.id
-  `).get({ shortcode, userId })
+  `).get({ shortcode })
 
   if (!lounge) return null
 
@@ -92,7 +91,7 @@ export function findLoungeByCode(shortcode: string, userId: string): LoungeRespo
     ...lounge,
     shortcode,
     settings:     JSON.parse(lounge.settings),
-    participants: (JSON.parse(lounge.participants) as []).filter(Boolean)
+    participants: JSON.parse(lounge.participants) as { id: string, name: string, image: string }[]
   }
 }
 

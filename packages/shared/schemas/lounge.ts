@@ -19,7 +19,7 @@ export const LoungeResponseSchema = Type.Object({
   id:           LoungeIdSchema,
   creatorId:    UserIdSchema,
   createdAt:    TimestampSchema,
-  endedAt:      NullableTimestamp,
+  endedAt:      Type.Optional(NullableTimestamp),
   startedAt:    NullableTimestamp,
   shortcode:    ShortcodeSchema,
   settings:     LoungeSettingsSchema,

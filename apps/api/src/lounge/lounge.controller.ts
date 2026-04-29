@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { betterAuth } from '../lib/auth-plugin'
 import {
-  createLounge, getActiveLoungeByCode, getUserActiveLoungesWithDetails, joinLounge,
+  createLounge, getActiveLoungeByCodeAndUser, getUserActiveLoungesWithDetails, joinLounge,
   removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe,
   getEndedLoungeWithDetails, getUserEndedLoungesWithDetails
 } from './lounge.service'
@@ -70,14 +70,15 @@ export const loungeController = new Elysia()
 
   // Fetch lounge data by shortcode
   .get('/api/lounges/active/:shortcode', async ({ user, status, params: { shortcode } }) => {
-    const result = getActiveLoungeByCode(shortcode, user.id)
-    if (!result.ok) return status(404)
+    const result = getActiveLoungeByCodeAndUser(shortcode, user.id)
+    if (result.ok) return { lounge: result.data }
 
-    // Ensure that the user is a participant
-    const isParticipant = result.lounge.participants.find(part => user.id === part.id)
-    if (!isParticipant) return status(401)
+    const code = {
+      LOUNGE_MISSING:   404,
+      FORBIDDEN_ACCESS: 403
+    } as const
 
-    return result.lounge
+    return status(code[result.error], { type: result.error })
   }, {
     auth:   true,
     params: t.Object({ shortcode: ShortcodeSchema })

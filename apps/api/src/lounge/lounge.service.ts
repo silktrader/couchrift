@@ -1,6 +1,6 @@
 import { createShortcode, createLoungeId } from '../lib/id'
 import {
-  addLounge, findLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
+  addLounge, getActiveLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData,
   insertSwipe,
   getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges
@@ -42,11 +42,11 @@ export function removeLounge(loungeId: string, requesterId: string) {
   return deleteLounge(loungeId, requesterId)
 }
 
-export function getActiveLoungeByCode(shortcode: string, userId: string):
-  { ok: true, lounge: LoungeResponse } | { ok: false, error: 'NOT_FOUND' } {
-  const lounge = findLoungeByCode(shortcode, userId)
-  if (!lounge) return { ok: false, error: 'NOT_FOUND' }
-  return { ok: true, lounge }
+export function getActiveLoungeByCodeAndUser(shortcode: string, userId: string) {
+  const lounge = getActiveLoungeByCode(shortcode)
+  if (!lounge) return fail('LOUNGE_MISSING')
+  if (!lounge.participants.find(participant => participant.id === userId)) return fail('FORBIDDEN_ACCESS')
+  return succeed(lounge)
 }
 
 // Get active lounges the user has joined or created.
