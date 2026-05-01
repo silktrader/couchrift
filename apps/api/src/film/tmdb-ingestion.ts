@@ -5,6 +5,7 @@ import { TMDB } from './tmdb-config'
 import type { TmdbGenre, TmdbFilmDiscover, TmdbFilmData, TmdbDiscoverResponse } from './film.models'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { safeFetch } from '../lib/safe-fetch.ts'
+import type { PersonRole } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
 export async function startTmdbIngestion() {
 
@@ -116,13 +117,19 @@ async function ingestTmdbFilms() {
     // Fetch TMDB film
     const filmResponse = await fetchFilm(film.id)
     if (!filmResponse.ok) {
-      console.error(`[TMDB] ❌ Error downloading TMDB film data (${film.id}).`)
+      console.error(`[TMDB] ❌ Error downloading film data (${film.id}).`)
+      continue
+    }
+
+    const extraction = extractFilmData(filmResponse.data)
+    if (!extraction.ok) {
+      console.error(`[TMDB] ❌ Error extracting film data (${film.id}): ${extraction.error}`)
       continue
     }
 
     // Attempt to store the film
     try {
-      insertFilm(filmResponse.data)
+      insertFilm(extraction.data)
       addedFilms += 1
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -151,8 +158,9 @@ async function fetchRandomPage() {
   })
 }
 
+// Fetch film details and credits with one single request
 async function fetchFilm(id: number) {
-  return await safeFetch<TmdbFilmData>(`${TMDB.BASE_URL}/movie/${id}`, {
+  return await safeFetch<TmdbFilmData>(`${TMDB.BASE_URL}/movie/${id}?append_to_response=credits`, {
     headers: { Authorization: `Bearer ${TMDB.API_KEY}` },
     signal:  AbortSignal.timeout(5000)
   })
@@ -163,4 +171,53 @@ const ERRORS: Record<string, string> = {
   TIMEOUT: 'Timeout error',
   UNKNOWN: 'Unknown error',
   JSON:    'JSON parsing error'
+}
+
+const crewRoles: Record<string, PersonRole> = {
+  Novel:      'writer',
+  Screenplay: 'writer',
+  Story:      'writer',
+  Director:   'director'
+} as const
+
+// Extracts the 'data' type only when 'ok' is true
+export type FilmIngestionData = Extract<ReturnType<typeof extractFilmData>, { ok: true }>['data'];
+
+function extractFilmData(film: TmdbFilmData) {
+  // Derive release year from string
+  const year = parseInt(film.release_date.slice(0, 4))
+  if (isNaN(year)) return fail('INVALID_RELEASE')
+  if (film.runtime <= 0) return fail('INVALID_RUNTIME')
+
+  // Prepare iterables before transaction
+  const genres = film.genres.map(genre => genre.id)
+  const people: { id: number, name: string, image: string | null, role: PersonRole, priority: number }[] = []
+
+  // Add the ten most relevant actors, TMDB data is ordered by `order` values
+  for (const member of film.credits.cast.slice(0, 10)) {
+    people.push({
+      id: member.id, name: member.name, image: member.profile_path ?? null, role: 'actor', priority: member.order
+    })
+  }
+
+  // Add directors and writers, ignore others
+  for (const person of film.credits.crew) {
+    const role = crewRoles[person.job]
+    if (role === undefined) continue
+    people.push({ id: person.id, name: person.name, image: person.profile_path, role, priority: 0 })
+  }
+
+  return succeed({
+    id:       film.id,
+    title:    film.title,
+    language: film.original_language,
+    year,
+    runtime:  film.runtime,
+    added:    Date.now(),
+    poster:   film.poster_path,
+    backdrop: film.backdrop_path,
+    overview: film.overview,
+    genres,
+    people
+  })
 }

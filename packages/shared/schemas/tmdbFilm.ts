@@ -15,4 +15,11 @@ export const TmdbFilmSchema = Type.Object({
   genres:   Type.Array(Type.String())
 })
 
-export type TmdbFilm = Static<typeof TmdbFilmSchema>;
+export type TmdbFilm = Static<typeof TmdbFilmSchema>
+
+export const PersonRoleSchema = Type.Union([
+  Type.Literal('actor'),
+  Type.Literal('writer'),
+  Type.Literal('director')
+])
+export type PersonRole = Static<typeof PersonRoleSchema>

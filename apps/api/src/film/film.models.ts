@@ -25,9 +25,10 @@ export interface TmdbFilmDiscover {
 }
 
 // Response from https://api.themoviedb.org/3/movie/{movie_id}
+// Augmented with "append_to_response" query
 // Described at https://developer.themoviedb.org/reference/movie-details
 export interface TmdbFilmData {
-  id: string
+  id: number
   backdrop_path: string
   original_language: string
   title: string
@@ -36,7 +37,24 @@ export interface TmdbFilmData {
   release_date: string
   runtime: number
   genres: { id: number, name: string }[]
-  vote_average: number
+  vote_average: number,
+  credits: TmdbCreditsData
+}
+
+interface TmdbCreditsData {
+  id: number,
+  cast: {
+    id: number,
+    name: string,
+    order: number,
+    profile_path: string
+  }[],
+  crew: {
+    id: number,
+    name: string,
+    profile_path: string,
+    job: string
+  }[]
 }
 
 // Returned by DB queries

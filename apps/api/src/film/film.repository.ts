@@ -1,5 +1,7 @@
 import db from '../db'
 import type { TmdbGenre, TmdbFilmData, TmdbFilmRow } from './film.models'
+import type { PersonRole } from '@couchrift/shared/schemas/tmdbFilm.ts'
+import type { FilmIngestionData } from './tmdb-ingestion.ts'
 
 export function getOldestGenreUpdate() {
   return db.query(`
@@ -38,41 +40,52 @@ export function getExistingFilmIds(ids: number[]) {
   `).all({ ids: JSON.stringify(ids) })
 }
 
-export function insertFilm(film: TmdbFilmData) {
-  // Derive release year from string
-  const year = parseInt(film.release_date.slice(0, 4))
-  if (isNaN(year)) throw new Error(`Film ${film.id} has invalid release date`)
+const insertFilmData = db.query(`
+    INSERT INTO films (id, title, language, year, runtime, added, poster, backdrop, overview)
+    VALUES (@id, @title, @language, @year, @runtime, @added, @poster, @backdrop, @overview)
+`)
 
-  // Ensure that an upsert actually triggers a change
-  const added = Date.now()
-  const id = Number(film.id)
-  const genreIds = JSON.stringify(film.genres.map(genre => genre.id))
+const insertFilmGenre = db.query(`
+    INSERT INTO film_genres (film_id, genre_id)
+    VALUES (@filmId, @genreId)
+`)
 
-  // Generate a transaction that groups film and genre addition
-  const tx = db.transaction((film: TmdbFilmData) => {
-    // Add or update film data
-    db.query(`
-        INSERT INTO films (id, title, language, year, runtime, added, poster, backdrop, overview)
-        VALUES (@id, @title, @language, @year, @runtime, @added, @poster, @backdrop, @overview)
-    `).run({
-      id,
-      title:    film.title,
-      language: film.original_language,
-      year,
-      runtime:  film.runtime,
-      added,
-      poster:   film.poster_path,
-      backdrop: film.backdrop_path,
-      overview: film.overview
-    })
+// Insert a person and update their image when missing
+const insertPerson = db.query(`
+    INSERT INTO people (id, name, image)
+    VALUES (@id, @name, @image)
+    ON CONFLICT (id) DO UPDATE SET image = excluded.image
+    WHERE people.image IS NULL
+      AND excluded.image IS NOT NULL
+`)
+
+// Mind the same role appearing twice, such as "writer" being triggered by "Screenplay" and "Novel"
+const insertFilmPerson = db.query(`
+    INSERT INTO film_people (filmId, personId, role, priority)
+    VALUES (@filmId, @id, @role, @priority)
+    ON CONFLICT (filmId, personId, role) DO NOTHING
+`)
+
+export function insertFilm(data: FilmIngestionData) {
+
+  const { genres, people, ...film } = data
+
+  // Generate a transaction that handles film data, genres, cast and crew insertions
+  const tx = db.transaction(() => {
+    // Add film data with the assumption that existing film IDs are excluded from ingestion
+    insertFilmData.run({ ...film })
 
     // Add film genres
-    db.query(`INSERT INTO film_genres (film_id, genre_id)
-              SELECT @id, value
-              FROM json_each(@genreIds)`).run({ id, genreIds })
+    genres.forEach(genreId => insertFilmGenre.run({ filmId: film.id, genreId }))
+
+    // Add film people
+    people.forEach(person => {
+      insertPerson.run({ ...person })
+      insertFilmPerson.run({ filmId: film.id, ...person })
+    })
   })
 
-  tx.immediate(film)
+  tx.immediate()
 }
 
 export function getFilmDetails(filmId: number) {
