@@ -41,7 +41,10 @@ This is a **monorepo** with Bun's workspaces.
 │       │   └── routes
 │       │       ├── (registered)
 │       │       │   ├── [shortcode]
+│       │       │   │   └── waiting
 │       │       │   ├── home
+│       │       │   ├── lounges
+│       │       │   │   └── [id]
 │       │       │   ├── me
 │       │       │   └── welcome
 │       │       └── (unregistered)
@@ -398,7 +401,30 @@ CREATE TABLE IF NOT EXISTS swipes (
     PRIMARY KEY (loungeId, userId, filmId)
 ) WITHOUT ROWID;
 
-
-
 CREATE INDEX idx_swipes_match ON swipes (loungeId, filmId) WHERE value = 1; -- helps with match finding
+
+-- normalised table to potentially allow multi-matches lounges in the future
+CREATE TABLE lounge_matches (
+    loungeId  TEXT    NOT NULL REFERENCES lounges (id) ON DELETE CASCADE,
+    filmId    INTEGER NOT NULL,
+    matchedAt INTEGER NOT NULL,
+    PRIMARY KEY (loungeId, filmId)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS people (
+    id    INTEGER PRIMARY KEY, -- TMDB person id
+    name  TEXT NOT NULL,
+    image TEXT                 -- nullable: not everyone has a profile photo
+);
+
+CREATE TABLE IF NOT EXISTS film_people (
+    filmId   INTEGER NOT NULL REFERENCES films (id) ON DELETE CASCADE,
+    personId INTEGER NOT NULL REFERENCES people (id) ON DELETE CASCADE,
+    role     TEXT    NOT NULL CHECK (role IN ('actor', 'director', 'writer')),
+    priority INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (filmId, personId, role) -- role in PK: same person can direct AND write
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_film_people_film ON film_people (filmId);
+CREATE INDEX IF NOT EXISTS idx_film_people_person ON film_people (personId);
 ```
