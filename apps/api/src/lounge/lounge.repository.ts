@@ -3,7 +3,7 @@ import type { AddLoungeData } from './lounge.models'
 import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
-import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
+import type { TmdbFilm, FilmPerson } from '@couchrift/shared/schemas/tmdbFilm.ts'
 import type { TmdbFilmRow } from '../film/film.models.ts'
 
 export function addLounge(data: AddLoungeData) {
@@ -284,11 +284,23 @@ export function selectUnswipedFilms(loungeId: string, userId: string, needed: nu
              poster,
              backdrop,
              overview,
-             json_group_array(DISTINCT g.name) AS genres
+             (SELECT json_group_array(DISTINCT g.name)
+              FROM film_genres fg
+                       JOIN genres g ON g.id = fg.genre_id
+              WHERE fg.film_id = films.id) AS genres,
+             (SELECT json_group_array(
+                             json_object(
+                                     'name', p.name,
+                                     'image', p.image,
+                                     'role', fp.role,
+                                     'priority', fp.priority
+                             )
+                     )
+              FROM film_people fp
+                       JOIN people p ON p.id = fp.personId
+              WHERE fp.filmId = films.id)  AS people
       FROM lounge_films
                JOIN films ON films.id = lounge_films.filmId
-               LEFT JOIN film_genres AS fg ON fg.film_id = lounge_films.filmId
-               LEFT JOIN genres g ON g.id = fg.genre_id
       WHERE loungeId = @loungeId
         AND lounge_films.filmId NOT IN (SELECT filmId
                                         FROM swipes
@@ -301,7 +313,8 @@ export function selectUnswipedFilms(loungeId: string, userId: string, needed: nu
 
   return rows.map((film) => ({
     ...film,
-    genres: JSON.parse(film.genres) as string[]
+    genres: JSON.parse(film.genres) as string[],
+    people: JSON.parse(film.people) as FilmPerson[]
   }))
 }
 

@@ -5,5 +5,8 @@ export const filmConfig = {
   },
   year:    {
     min: 1880
+  },
+  people:  {
+    max: 12
   }
 } as const

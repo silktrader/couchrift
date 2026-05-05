@@ -6,6 +6,7 @@ import type { TmdbGenre, TmdbFilmDiscover, TmdbFilmData, TmdbDiscoverResponse } 
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { safeFetch } from '../lib/safe-fetch.ts'
 import type { PersonRole } from '@couchrift/shared/schemas/tmdbFilm.ts'
+import { filmConfig } from '@couchrift/shared/config/film.ts'
 
 export async function startTmdbIngestion() {
 
@@ -194,7 +195,7 @@ function extractFilmData(film: TmdbFilmData) {
   const people: { id: number, name: string, image: string | null, role: PersonRole, priority: number }[] = []
 
   // Add the ten most relevant actors, TMDB data is ordered by `order` values
-  for (const member of film.credits.cast.slice(0, 10)) {
+  for (const member of film.credits.cast.slice(0, filmConfig.people.max)) {
     people.push({
       id: member.id, name: member.name, image: member.profile_path ?? null, role: 'actor', priority: member.order
     })

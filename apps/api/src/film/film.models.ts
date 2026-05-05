@@ -58,4 +58,4 @@ interface TmdbCreditsData {
 }
 
 // Returned by DB queries
-export type TmdbFilmRow = Omit<TmdbFilm, 'genres'> & { genres: string }
+export type TmdbFilmRow = Omit<TmdbFilm, 'genres'> & { genres: string } & { people: string }
