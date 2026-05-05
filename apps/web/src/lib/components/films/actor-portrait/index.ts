@@ -1,0 +1,1 @@
+export { default as ActorPortrait } from './actor-portrait.svelte'
