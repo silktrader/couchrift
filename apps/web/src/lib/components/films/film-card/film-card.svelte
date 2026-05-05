@@ -118,7 +118,7 @@
     <!--  Cast -->
     <div class="mb-8">
       <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Cast</h3>
-      <div class="grid grid-cols-4 gap-8 mb-8">
+      <div class="grid grid-cols-3 md:grid-cols-4 gap-8 mb-8">
 
         {#each people.actors as actor }
           <ActorPortrait {actor}/>
