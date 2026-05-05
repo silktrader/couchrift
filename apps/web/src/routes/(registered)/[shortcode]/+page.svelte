@@ -5,7 +5,7 @@
   import * as Drawer from '$lib/components/ui/drawer'
   import { Badge } from '$lib/components/ui/badge'
   import {
-    GalleryHorizontalEnd, Calendar, Flame, Timer, SlidersHorizontal, Heart, X, Users, ExternalLink
+    GalleryHorizontalEnd, Calendar, Clapperboard, Timer, SlidersHorizontal, Heart, X, Users, ExternalLink
   } from '@lucide/svelte/icons'
   import { FilmCard } from '$lib/components/films/film-card'
   import * as languages from '$lib/languages'
@@ -98,44 +98,56 @@
 
         <img src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
              alt={`${film.title} Poster`}
-             class="flex-1 min-h-0 rounded-lg border border-foreground/10 object-contain z-10"/>
+             class="rounded-lg border border-foreground/10 object-contain z-10"/>
 
-        <section class="flex flex-col gap-2">
+        <section class="flex flex-col w-full gap-2 justify-start pl-4">
           <h2 class="text-2xl font-bold leading-tight drop-shadow-lg text-foreground line-clamp-2">
             {film.title}
           </h2>
           <div class="flex w-full flex-wrap gap-2">
             <img src={languages.getFlag(film.language)}
-                 width="16"
+                 width="18"
                  alt="Film Language"/>
-            <Badge variant="secondary" class="py-3">
-              <Calendar/> {film.year}</Badge>
-            <Badge variant="secondary" class="py-3">
-              <Timer/>{formatDuration(film.runtime)}</Badge>
-            <Badge variant="secondary" class="py-3">
-              <Flame/>
-              <Flame/>
-            </Badge>
-            <div class="flex w-full gap-2">
-              {#each film.genres as genre}
-                <span class="text-sm font-semibold [font-variant:small-caps] px-1.5 py-0.5 rounded
-                bg-secondary/60 text-foreground/80 border border-secondary/20 backdrop-blur-md">
-                  {genre}
-                </span>
-              {/each}
-            </div>
+
+            <span
+                class="flex gap-1 items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">
+              <Calendar class="size-3"/> {film.year}
+            </span>
+
+            <span
+                class="flex gap-1 items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">
+              <Timer class="size-3"/>{formatDuration(film.runtime)}
+            </span>
+
+            <span
+                class="flex items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">
+              {film.genres[0]}
+            </span>
+            
           </div>
 
         </section>
 
-        <section class="flex justify-around">
-          <Button size="icon" variant="outline" class="rounded-full h-18 w-18 border-2" onclick={handleDislike}>
-            <X class="size-8"/>
+        <section class="flex w-4/5 justify-between items-center">
+          <Button size="icon" class="bg-red-800 rounded-full h-18 w-18" onclick={handleDislike}>
+            <X class="size-8 fill-background stroke-background stroke-5"/>
           </Button>
+          <Drawer.Root>
+            <Drawer.Trigger>
+              <Button size="icon" variant="outline" class="rounded-full h-14 w-14 border-2">
+                <Clapperboard class="size-6"/>
+              </Button>
+            </Drawer.Trigger>
+            <Drawer.Content class="md:max-w-lg mx-auto">
+              <FilmCard {film}></FilmCard>
+            </Drawer.Content>
+          </Drawer.Root>
+
           <Button size="icon" class="rounded-full h-18 w-18" onclick={handleLike}>
             <Heart class="size-8 fill-background stroke-background"/>
           </Button>
         </section>
+
       {:else}
         <h2 class="text-2xl font-semibold">Missing Film</h2>
       {/if}
@@ -154,10 +166,3 @@
   </Tabs.Root>
 
 </div>
-
-<Drawer.Root>
-  <Drawer.Trigger>More</Drawer.Trigger>
-  <Drawer.Content class="md:max-w-lg mx-auto">
-    <FilmCard {film}></FilmCard>
-  </Drawer.Content>
-</Drawer.Root>
