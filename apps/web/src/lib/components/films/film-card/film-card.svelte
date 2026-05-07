@@ -42,14 +42,14 @@
         <div class="flex flex-wrap gap-2 mb-2">
           {#each film.genres as genre}
                 <span
-                    class="text-sm text-secondary-foreground font-semibold uppercase tracking-wider
+                    class="text-xs text-secondary-foreground font-semibold uppercase tracking-wider
                            px-1 py-0.5 rounded bg-secondary/20 border border-secondary-foreground/20 backdrop-blur-md">
                   {genre}
                 </span>
           {/each}
         </div>
 
-        <h2 class="text-3xl font-bold leading-tight drop-shadow-lg text-foreground mb-1 line-clamp-2">
+        <h2 class="text-xl font-bold leading-tight drop-shadow-lg text-foreground mb-1 line-clamp-2">
           {film.title}
         </h2>
 

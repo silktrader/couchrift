@@ -3,18 +3,36 @@
   import { Button } from '$lib/components/ui/button'
   import * as Tabs from '$lib/components/ui/tabs'
   import * as Drawer from '$lib/components/ui/drawer'
-  import { Badge } from '$lib/components/ui/badge'
   import {
-    GalleryHorizontalEnd, Calendar, Clapperboard, Timer, SlidersHorizontal, Heart, X, Users, ExternalLink
+    GalleryHorizontalEnd, Clapperboard, SlidersHorizontal, Heart, X, Users
   } from '@lucide/svelte/icons'
   import { FilmCard } from '$lib/components/films/film-card'
-  import * as languages from '$lib/languages'
-  import { formatDuration } from '$lib/dates'
   import { toast } from 'svelte-sonner'
+  import SwipeCard from './components/swipe-card.svelte'
 
   const ls = getLoungeContext()
 
   let tab: 'deck' | 'history' | 'users' = $state('deck')
+
+  const deck = $derived(ls.films.slice(0, 3))
+
+  let refs = $state<any[]>([])
+
+  async function handleSwipe(dir: 'left' | 'right', film: typeof ls.films[number]) {
+    const result = await ls.sendSwipe(dir === 'right' ? 1 : -1)
+    if (!result.ok) toast.error(`Couldn't swipe ${film.title}.`)
+  }
+
+  function handleExit(film: typeof ls.films[number]) {
+  }
+
+  function swipeLeft() {
+    refs[0]?.api.swipe('left')
+  }
+
+  function swipeRight() {
+    refs[0]?.api.swipe('right')
+  }
 
   let fetchingFilms: boolean = $state(false)
 
@@ -45,7 +63,7 @@
     return () => subscriptions.forEach((unsub) => unsub())
   })
 
-  const film = $derived(ls.films.at(-1)!)
+  const film = $derived(ls.films.at(0)!)
 
   async function handleLike() {
     await handleSendSwipe(1)
@@ -58,7 +76,7 @@
   async function handleSendSwipe(value: 1 | -1) {
     if (!film) return
     const { id, title } = film
-    const result = await ls.sendSwipe(id, value)
+    const result = await ls.sendSwipe(value)
 
     if (!result.ok) {
       toast.error(`Couldn't swipe ${title} .`)
@@ -93,64 +111,41 @@
     </Tabs.List>
 
     <Tabs.Content value="deck"
-                  class="flex flex-col h-full w-full items-center justify-center min-w-0 min-h-0 gap-6 transition-opacity duration ease-in-out opacity-100">
-      {#if film}
+                  class="flex flex-col h-full w-full items-center justify-between py-4 min-w-0 min-h-0 gap-6">
 
-        <img src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
-             alt={`${film.title} Poster`}
-             class="rounded-lg border border-foreground/10 object-contain z-10"/>
+      <div class="relative flex-1 w-full">
+        {#each deck as film, i (film.id)}
+          <SwipeCard
+              bind:this={refs[i]}
+              {film}
+              depth={i}
+              zIndex={deck.length - i}
+              onSwipe={(dir, film) => handleSwipe(dir, film)}
+              onExit={(film) => handleExit(film)}
+          />
+        {/each}
+      </div>
 
-        <section class="flex flex-col w-full gap-2 justify-start pl-4">
-          <h2 class="text-2xl font-bold leading-tight drop-shadow-lg text-foreground line-clamp-2">
-            {film.title}
-          </h2>
-          <div class="flex w-full flex-wrap gap-2">
-            <img src={languages.getFlag(film.language)}
-                 width="18"
-                 alt="Film Language"/>
+      <section class="flex w-4/5 justify-between items-center">
+        <Button size="icon" class="bg-red-800 rounded-full h-18 w-18" onclick={handleDislike}>
+          <X class="size-8 fill-background stroke-background stroke-5"/>
+        </Button>
+        <Drawer.Root>
+          <Drawer.Trigger>
+            <Button size="icon" variant="outline" class="rounded-full h-14 w-14 border-2">
+              <Clapperboard class="size-6"/>
+            </Button>
+          </Drawer.Trigger>
+          <Drawer.Content class="md:max-w-lg mx-auto">
+            <FilmCard {film}/>
+          </Drawer.Content>
+        </Drawer.Root>
 
-            <span
-                class="flex gap-1 items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">
-              <Calendar class="size-3"/> {film.year}
-            </span>
+        <Button size="icon" class="rounded-full h-18 w-18" onclick={handleLike}>
+          <Heart class="size-8 fill-background stroke-background"/>
+        </Button>
+      </section>
 
-            <span
-                class="flex gap-1 items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">
-              <Timer class="size-3"/>{formatDuration(film.runtime)}
-            </span>
-
-            <span
-                class="flex items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">
-              {film.genres[0]}
-            </span>
-            
-          </div>
-
-        </section>
-
-        <section class="flex w-4/5 justify-between items-center">
-          <Button size="icon" class="bg-red-800 rounded-full h-18 w-18" onclick={handleDislike}>
-            <X class="size-8 fill-background stroke-background stroke-5"/>
-          </Button>
-          <Drawer.Root>
-            <Drawer.Trigger>
-              <Button size="icon" variant="outline" class="rounded-full h-14 w-14 border-2">
-                <Clapperboard class="size-6"/>
-              </Button>
-            </Drawer.Trigger>
-            <Drawer.Content class="md:max-w-lg mx-auto">
-              <FilmCard {film}></FilmCard>
-            </Drawer.Content>
-          </Drawer.Root>
-
-          <Button size="icon" class="rounded-full h-18 w-18" onclick={handleLike}>
-            <Heart class="size-8 fill-background stroke-background"/>
-          </Button>
-        </section>
-
-      {:else}
-        <h2 class="text-2xl font-semibold">Missing Film</h2>
-      {/if}
     </Tabs.Content>
 
     <Tabs.Content value="history"

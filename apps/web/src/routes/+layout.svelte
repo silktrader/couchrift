@@ -24,6 +24,7 @@
         md:border-2
       md:border-neutral-900
       gap-6
+      overflow-hidden
     "
   >
     {@render children()}

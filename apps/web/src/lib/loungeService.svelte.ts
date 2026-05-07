@@ -21,6 +21,7 @@ export class LoungeService {
     return this._lounge
   }
 
+  // Queue of films
   private _films: TmdbFilm[] = $state([])
   get films() { return this._films }
 
@@ -69,15 +70,17 @@ export class LoungeService {
   }
 
   // Send swipe requests
-  public async sendSwipe(filmId: number, value: -1 | 1) {
+  public async sendSwipe(value: -1 | 1) {
+    const filmId = this._films.at(0)?.id
+    if (!filmId) return fail('FILM_MISSING')
     const { error } = await client.api.lounges({ loungeId: this.lounge.id })
                                   .swipes
                                   .post({ filmId, like: value === 1 })
 
     if (error) return fail(error.value.type)
 
-    // Remove the film from the stack when the swipe is successful, regardless of value
-    this._films.pop()
+    // Remove the film from the queue when the swipe is successful, regardless of value
+    this._films.shift()
     return succeed()
   }
 
