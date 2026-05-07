@@ -35,7 +35,7 @@ const app = new Elysia()
   .use(userController)
   .use(loungeController)
   .use(loungeWsController)
-  .listen(3000)
+  .listen({ port: 3000 })
 
 console.log(`[INIT] 🔵 Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'prod' : 'dev'})`)
 
