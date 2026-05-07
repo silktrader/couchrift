@@ -64,7 +64,7 @@
       return
     }
 
-    await goto('/', { replaceState: true })
+    await goto('/home', { replaceState: true })
   }
 </script>
 

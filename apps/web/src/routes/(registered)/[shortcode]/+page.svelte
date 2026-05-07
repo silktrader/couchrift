@@ -18,9 +18,12 @@
 
   let refs = $state<any[]>([])
 
-  async function handleSwipe(dir: 'left' | 'right', film: typeof ls.films[number]) {
+  async function handleSwipe(dir: 'left' | 'right', film: typeof ls.films[number]): Promise<boolean> {
     const result = await ls.sendSwipe(dir === 'right' ? 1 : -1)
-    if (!result.ok) toast.error(`Couldn't swipe ${film.title}.`)
+    if (result.ok) return true
+
+    toast.error(`Couldn't swipe ${film.title}.`)
+    return false
   }
 
   function handleExit(film: typeof ls.films[number]) {

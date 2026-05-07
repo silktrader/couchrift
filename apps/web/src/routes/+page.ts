@@ -5,3 +5,4 @@ import { authClient } from '$lib/auth-client'
 // This one serves as a landing page for unregistered users.
 const user = (await authClient.getSession()).data?.user
 if (user) throw redirect(302, '/home')
+throw redirect(303, '/sign-in')

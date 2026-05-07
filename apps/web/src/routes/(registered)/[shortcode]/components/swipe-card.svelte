@@ -13,7 +13,7 @@
     film: any
     depth: number,
     zIndex: number,
-    onSwipe?: (dir: 'left' | 'right', film: any) => void
+    onSwipe?: (dir: 'left' | 'right', film: any) => Promise<boolean>
     onExit?: (film: any) => void
   } = $props()
 
@@ -75,13 +75,18 @@
 
   // Animations
 
-  function swipe(dir: 'left' | 'right') {
+  async function swipe(dir: 'left' | 'right') {
     const target = dir === 'right' ? 500 : -500
 
-    onSwipe?.(dir, film)
+    const swiped = await onSwipe?.(dir, film)
 
     animateTo(target, y + velocityX * 2, 0.2, () => {
       onExit?.(film)
+      // Reset coordinates
+      if (!swiped) {
+        x = 0
+        y = 0
+      }
     })
   }
 
