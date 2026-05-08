@@ -9,6 +9,7 @@
   import { FilmCard } from '$lib/components/films/film-card'
   import { toast } from 'svelte-sonner'
   import SwipeCard from './components/swipe-card.svelte'
+  import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
   const ls = getLoungeContext()
 
@@ -16,9 +17,9 @@
 
   const deck = $derived(ls.films.slice(0, 3))
 
-  let refs = $state<any[]>([])
+  let deckRefs = $state<any[]>([])
 
-  async function handleSwipe(dir: 'left' | 'right', film: typeof ls.films[number]): Promise<boolean> {
+  async function handleSwipe(dir: 'left' | 'right', film: TmdbFilm): Promise<boolean> {
     const result = await ls.sendSwipe(dir === 'right' ? 1 : -1)
     if (result.ok) return true
 
@@ -26,15 +27,16 @@
     return false
   }
 
-  function handleExit(film: typeof ls.films[number]) {
+  async function handleLike() {
+    deckRefs[0]?.api.swipe('right')
   }
 
-  function swipeLeft() {
-    refs[0]?.api.swipe('left')
+  async function handleDislike() {
+    deckRefs[0]?.api.swipe('left')
   }
 
-  function swipeRight() {
-    refs[0]?.api.swipe('right')
+  function handleExit() {
+    ls.dequeueFilm()
   }
 
   let fetchingFilms: boolean = $state(false)
@@ -67,24 +69,6 @@
   })
 
   const film = $derived(ls.films.at(0)!)
-
-  async function handleLike() {
-    await handleSendSwipe(1)
-  }
-
-  async function handleDislike() {
-    await handleSendSwipe(-1)
-  }
-
-  async function handleSendSwipe(value: 1 | -1) {
-    if (!film) return
-    const { id, title } = film
-    const result = await ls.sendSwipe(value)
-
-    if (!result.ok) {
-      toast.error(`Couldn't swipe ${title} .`)
-    }
-  }
 
 </script>
 
@@ -119,12 +103,12 @@
       <div class="relative flex-1 w-full">
         {#each deck as film, i (film.id)}
           <SwipeCard
-              bind:this={refs[i]}
+              bind:this={deckRefs[i]}
               {film}
               depth={i}
               zIndex={deck.length - i}
               onSwipe={(dir, film) => handleSwipe(dir, film)}
-              onExit={(film) => handleExit(film)}
+              onExit={handleExit}
           />
         {/each}
       </div>

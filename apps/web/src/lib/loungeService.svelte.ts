@@ -25,6 +25,9 @@ export class LoungeService {
   private _films: TmdbFilm[] = $state([])
   get films() { return this._films }
 
+  private _match: TmdbFilm | null = $state(null)
+  get match() { return this._match }
+
   private ws: WsClient<LoungeEventMap>
   private listeners = new Set<LoungeListener>()
 
@@ -79,9 +82,12 @@ export class LoungeService {
 
     if (error) return fail(error.value.type)
 
-    // Remove the film from the queue when the swipe is successful, regardless of value
-    this._films.shift()
+    // Delay removing the film from the queue so that the UI can perform animations
     return succeed()
+  }
+
+  public dequeueFilm() {
+    this._films.shift()
   }
 
   private registerHandlers() {
@@ -105,6 +111,7 @@ export class LoungeService {
     })
 
     this.ws.on('lounge_matched', event => {
+      this._match = event.match
       this.emit(event)
     })
   }

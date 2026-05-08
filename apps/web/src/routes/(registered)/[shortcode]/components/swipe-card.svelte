@@ -1,7 +1,5 @@
 <script lang="ts">
-  import * as languages from '$lib/languages'
-  import { formatDuration } from '$lib/dates'
-  import { Calendar, Timer, Heart, X } from '@lucide/svelte/icons'
+  import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
   let {
         film,
@@ -10,11 +8,11 @@
         onSwipe,
         onExit
       }: {
-    film: any
+    film: TmdbFilm
     depth: number,
     zIndex: number,
     onSwipe?: (dir: 'left' | 'right', film: any) => Promise<boolean>
-    onExit?: (film: any) => void
+    onExit?: () => void
   } = $props()
 
   let x = $state(0)
@@ -37,7 +35,6 @@
   const scale = $derived(1 - depth * 0.1)
   const likeOpacity = $derived(x > 0 ? Math.min(x / 100, 1) : 0)
   const nopeOpacity = $derived(x < 0 ? Math.min(-x / 100, 1) : 0)
-  //const footerOpacity = $derived(Math.max(0, 1 - Math.abs(x) / 120))
 
   function onPointerDown(e: PointerEvent) {
     if (!isFront) return
@@ -74,18 +71,36 @@
   }
 
   // Animations
+  // 1. start animation immediately
+  // 2. send request in parallel
+  // 3. remove card only after animation completes
+  // 4. when the request fails, restore the card
 
   async function swipe(dir: 'left' | 'right') {
-    const target = dir === 'right' ? 500 : -500
+    const target = dir === 'right' ? 600 : -600
 
-    const swiped = await onSwipe?.(dir, film)
+    // Set initial random velocity
+    const throwY = y + (dir === 'right' ? 40 : -40)
 
-    animateTo(target, y + velocityX * 2, 0.2, () => {
-      onExit?.(film)
-      // Reset coordinates
-      if (!swiped) {
-        x = 0
-        y = 0
+    // Start request immediately, but don't await yet
+    const swipePromise = onSwipe?.(dir, film)
+
+    if (dir === 'right') {
+      x += 20
+    } else {
+      x -= 20
+    }
+
+    // Animate immediately
+    animateTo(target, throwY, 0.5, async () => {
+      const swiped = await swipePromise
+
+      if (swiped) {
+        // Dequeue film
+        onExit?.()
+      } else {
+        // Restore card
+        springBack()
       }
     })
   }
@@ -103,7 +118,7 @@
 
     function loop(now: number) {
       const t = Math.min((now - start) / (duration * 1000), 1)
-      const ease = 1 - Math.pow(1 - t, 3)
+      const ease = t * (2 - t) // quadratic ease
 
       x = sx + (tx - sx) * ease
       y = sy + (ty - sy) * ease
@@ -148,82 +163,52 @@
   function cancel() {
     if (frame) cancelAnimationFrame(frame)
   }
-
-  // expose programmatic API
-  export const api = { swipe }
 </script>
 
-<div class="absolute inset-0" style={`z-index: ${zIndex}`}>
-  <div
-      class="relative w-full h-full overflow-hidden will-change-transform touch-none select-none"
-      class:pointer-events-none={!isFront}
-      style={`
+<!-- Outer wrapper for scale animation -->
+<div
+    class="absolute inset-0 duration-300 ease-out transition-transform"
+    style={`
+    z-index:${zIndex};
+    transform: scale(${scale});
+  `}
+>
+
+    <div
+        class="relative w-full h-full overflow-hidden will-change-transform touch-none select-none"
+        class:pointer-events-none={!isFront}
+        style={`
         transform:
           translate(${x}px, ${y}px)
-          rotate(${rotate}deg)
-          scale(${scale});
-
-          transition:
-              ${dragging ? 'none' : 'transform 0.2s ease-out'};
+          rotate(${rotate}deg);
       `}
-      onpointerdown={onPointerDown}
-      onpointermove={onPointerMove}
-      onpointerup={onPointerUp}
-      onpointerleave={onPointerUp}
-      role="navigation"
-  >
-    <img
-        src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
-        class="absolute inset-0 rounded-3xl object-contain m-auto"
-        draggable="false"
-        alt="Poster"
-    />
-
-    <!-- Footer -->
-    <!--{#if isFront}-->
-    <!--  <section class="absolute bottom-4 left-4 flex flex-col z-10 gap-2 justify-start pl-4"-->
-    <!--           style={`opacity: ${footerOpacity}`}>-->
-    <!--    <h2 class="text-2xl font-bold leading-tight drop-shadow-lg text-foreground line-clamp-2">-->
-    <!--      {film.title}-->
-    <!--    </h2>-->
-    <!--    <div class="flex w-full flex-wrap gap-2">-->
-    <!--      <img src={languages.getFlag(film.language)}-->
-    <!--           width="18"-->
-    <!--           alt="Film Language"/>-->
-
-    <!--      <span-->
-    <!--          class="flex gap-1 items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">-->
-    <!--         <Calendar class="size-3"/> {film.year}-->
-    <!--       </span>-->
-
-    <!--      <span-->
-    <!--          class="flex gap-1 items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">-->
-    <!--         <Timer class="size-3"/>{formatDuration(film.runtime)}-->
-    <!--       </span>-->
-
-    <!--      <span-->
-    <!--          class="flex items-center font-medium h-5 px-3 py-4 rounded-4xl bg-secondary/60 [font-variant:small-caps]">-->
-    <!--         {film.genres[0]}-->
-    <!--       </span>-->
-
-    <!--    </div>-->
-    <!--  </section>-->
-    <!--{/if}-->
-
-    <!-- LIKE -->
-    <div
-        class="absolute top-6 left-6 border-4 border-primary rounded-2xl text-primary px-4 py-1 -rotate-12 text-5xl font-black"
-        style="opacity: {likeOpacity}"
+        onpointerdown={onPointerDown}
+        onpointermove={onPointerMove}
+        onpointerup={onPointerUp}
+        onpointerleave={onPointerUp}
+        role="navigation"
     >
-      LIKE
-    </div>
+      <img
+          src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
+          class="absolute inset-0 rounded-3xl object-contain m-auto"
+          draggable="false"
+          alt="Poster"
+      />
 
-    <!-- NOPE -->
-    <div
-        class="absolute top-6 right-6 border-4 rounded-2xl border-red-500 text-red-500 px-4 py-1 rotate-12 text-5xl font-black"
-        style="opacity: {nopeOpacity}"
-    >
-      NOPE
-    </div>
+      <!-- LIKE -->
+      <div
+          class="absolute top-6 left-6 border-4 border-primary rounded-2xl text-primary px-4 py-1 -rotate-12 text-5xl font-black"
+          style="opacity: {likeOpacity}"
+      >
+        LIKE
+      </div>
+
+      <!-- NOPE -->
+      <div
+          class="absolute top-6 right-6 border-4 rounded-2xl border-red-500 text-red-500 px-4 py-1 rotate-12 text-5xl font-black"
+          style="opacity: {nopeOpacity}"
+      >
+        NOPE
+      </div>
   </div>
 </div>
