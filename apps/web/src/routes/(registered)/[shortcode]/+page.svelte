@@ -14,6 +14,7 @@
   const ls = getLoungeContext()
 
   let tab: 'deck' | 'history' | 'users' = $state('deck')
+  let openFilmDetails = $state(false)
 
   const deck = $derived(ls.films.slice(0, 3))
 
@@ -109,6 +110,7 @@
               zIndex={deck.length - i}
               onSwipe={(dir, film) => handleSwipe(dir, film)}
               onExit={handleExit}
+              onTap={() => { openFilmDetails = true }}
           />
         {/each}
       </div>
@@ -117,7 +119,7 @@
         <Button size="icon" class="bg-red-800 rounded-full h-18 w-18" onclick={handleDislike}>
           <X class="size-8 fill-background stroke-background stroke-5"/>
         </Button>
-        <Drawer.Root>
+        <Drawer.Root bind:open={openFilmDetails}>
           <Drawer.Trigger>
             <Button size="icon" variant="outline" class="rounded-full h-14 w-14 border-2">
               <Clapperboard class="size-6"/>

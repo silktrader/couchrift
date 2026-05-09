@@ -6,19 +6,22 @@
         depth,
         zIndex,
         onSwipe,
-        onExit
+        onExit,
+        onTap
       }: {
     film: TmdbFilm
     depth: number,
     zIndex: number,
     onSwipe?: (dir: 'left' | 'right', film: any) => Promise<boolean>
     onExit?: () => void
+    onTap?: () => void
   } = $props()
 
   let x = $state(0)
   let y = $state(0)
 
   let dragging = $state(false)
+  let moved = false
 
   const isFront = $derived(depth === 0)
 
@@ -40,6 +43,8 @@
     if (!isFront) return
 
     dragging = true
+    moved = false // tracks movement for the onclick handler
+
     startX = e.clientX
     startY = e.clientY
     lastX = 0
@@ -50,16 +55,29 @@
     if (!dragging) return
 
     const newX = e.clientX - startX
+    const newY = e.clientY - startY
+
+    // Detect movement and set a flag
+    if (Math.abs(newX) > 8 || Math.abs(newY) > 8) {
+      moved = true
+    }
+
     velocityX = newX - lastX
     lastX = newX
 
     x = newX
-    y = (e.clientY - startY) * 0.2
+    y = newY * 0.2
   }
 
-  function onPointerUp() {
+  function onPointerUp(e: PointerEvent) {
     if (!dragging) return
     dragging = false
+
+    // Detect taps and trigger callbacks
+    if (!moved) {
+      onTap?.()
+      return
+    }
 
     const absX = Math.abs(x)
 
@@ -174,41 +192,41 @@
   `}
 >
 
-    <div
-        class="relative w-full h-full overflow-hidden will-change-transform touch-none select-none"
-        class:pointer-events-none={!isFront}
-        style={`
+  <div
+      class="relative w-full h-full overflow-hidden will-change-transform touch-none select-none"
+      class:pointer-events-none={!isFront}
+      style={`
         transform:
           translate(${x}px, ${y}px)
           rotate(${rotate}deg);
       `}
-        onpointerdown={onPointerDown}
-        onpointermove={onPointerMove}
-        onpointerup={onPointerUp}
-        onpointerleave={onPointerUp}
-        role="navigation"
+      onpointerdown={onPointerDown}
+      onpointermove={onPointerMove}
+      onpointerup={onPointerUp}
+      onpointerleave={onPointerUp}
+      role="navigation"
+  >
+    <img
+        src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
+        class="absolute inset-0 rounded-3xl object-contain m-auto"
+        draggable="false"
+        alt="Poster"
+    />
+
+    <!-- LIKE -->
+    <div
+        class="absolute top-6 left-6 border-4 border-primary rounded-2xl text-primary px-4 py-1 -rotate-12 text-5xl font-black"
+        style="opacity: {likeOpacity}"
     >
-      <img
-          src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
-          class="absolute inset-0 rounded-3xl object-contain m-auto"
-          draggable="false"
-          alt="Poster"
-      />
+      LIKE
+    </div>
 
-      <!-- LIKE -->
-      <div
-          class="absolute top-6 left-6 border-4 border-primary rounded-2xl text-primary px-4 py-1 -rotate-12 text-5xl font-black"
-          style="opacity: {likeOpacity}"
-      >
-        LIKE
-      </div>
-
-      <!-- NOPE -->
-      <div
-          class="absolute top-6 right-6 border-4 rounded-2xl border-red-500 text-red-500 px-4 py-1 rotate-12 text-5xl font-black"
-          style="opacity: {nopeOpacity}"
-      >
-        NOPE
-      </div>
+    <!-- NOPE -->
+    <div
+        class="absolute top-6 right-6 border-4 rounded-2xl border-red-500 text-red-500 px-4 py-1 rotate-12 text-5xl font-black"
+        style="opacity: {nopeOpacity}"
+    >
+      NOPE
+    </div>
   </div>
 </div>
