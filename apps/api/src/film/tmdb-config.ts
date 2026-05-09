@@ -3,5 +3,5 @@ export const TMDB = {
   API_KEY:               process.env.TMDB_API_KEY!,
   TARGET_FILM_COUNT:     5000,
   GENRE_UPDATE_INTERVAL: 8_000_000_000, // circa three months in ms.
-  MAX_PAGE:              200      // stay in quality territory (popular, complete data)
+  MAX_PAGE:              300      // hard max is 500, stay in quality territory (popular, complete data)
 }

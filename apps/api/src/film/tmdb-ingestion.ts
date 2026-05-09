@@ -143,7 +143,7 @@ async function ingestTmdbFilms() {
 
 // Return a random page filled with films according to randomly chosen and variable film parameters
 async function fetchRandomPage() {
-  const pageNumber = Math.floor(Math.random() * (TMDB.MAX_PAGE - 1))
+  const pageNumber = Math.min(Math.floor(Math.random() * (TMDB.MAX_PAGE - 1)), 1)
 
   // Build the URL with random parameters
   const url = new URL(`${TMDB.BASE_URL}/discover/movie`)
