@@ -181,6 +181,9 @@
   function cancel() {
     if (frame) cancelAnimationFrame(frame)
   }
+
+  // expose programmatic API
+  export const api = { swipe }
 </script>
 
 <!-- Outer wrapper for scale animation -->

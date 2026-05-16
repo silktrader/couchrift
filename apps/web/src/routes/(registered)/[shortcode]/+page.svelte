@@ -18,7 +18,7 @@
 
   const deck = $derived(ls.films.slice(0, 3))
 
-  let deckRefs = $state<any[]>([])
+  let deckRefs = $state<(SwipeCard | null)[]>([])
 
   async function handleSwipe(dir: 'left' | 'right', film: TmdbFilm): Promise<boolean> {
     const result = await ls.sendSwipe(dir === 'right' ? 1 : -1)
@@ -102,6 +102,7 @@
                   class="flex flex-col h-full w-full items-center justify-between py-4 min-w-0 min-h-0 gap-6">
 
       <div class="relative flex-1 w-full">
+        <!-- Use a single loop without conditionals to update existing components' depth and animate them -->
         {#each deck as film, i (film.id)}
           <SwipeCard
               bind:this={deckRefs[i]}
