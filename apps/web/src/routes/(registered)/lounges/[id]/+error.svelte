@@ -23,7 +23,7 @@
   })
 </script>
 
-<div class="flex flex-1 flex-col items-center mb-12">
+<div class="flex flex-1 flex-col items-center mb-12 p-4">
 
   <header class="w-full h-12 mb-6">
     <Button size="icon-lg" variant="ghost" onclick={goBack}>

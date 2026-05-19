@@ -70,7 +70,7 @@
 <AppHeader user={us.user}/>
 
 <!-- Main Actions -->
-<section class="flex w-1/2 flex-col justify-center self-center gap-6 my-16 shrink-0">
+<section class="flex w-1/2 flex-col justify-center self-center gap-6 my-16 shrink-0 p-4">
 
   {#if shortcodeError}
 
@@ -211,7 +211,7 @@
 </section>
 
 <!-- Main Navigator -->
-<footer class="flex w-full flex-col items-center justify-end gap-6 p-4 pb-8 shrink-0">
+<footer class="flex w-full flex-col items-center justify-end gap-6 p-8 shrink-0">
   <div class="flex w-full justify-between gap-6">
     <div class="flex w-12 flex-col items-center gap-1">
       <Button variant="outline" size="icon-lg">

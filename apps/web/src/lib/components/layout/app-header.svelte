@@ -10,7 +10,7 @@
   }>()
 </script>
 
-<header class="flex w-full flex-row justify-between items-center px-4">
+<header class="flex w-full flex-row justify-between items-center px-8 py-4">
   <img src="/full_logo.png" alt="logo" class="w-1/3 max-w-40 h-auto"/>
 
   <Button variant="ghost" class="rounded-full outline-1" size="icon" href="/me">

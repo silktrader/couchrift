@@ -13,7 +13,7 @@
   const match = $derived(lounge.matches[0])
 </script>
 
-<header class="flex w-full flex-row justify-s items-start">
+<header class="flex w-full flex-row justify-s items-start p-4">
   <Button variant="ghost" onclick={() => { goto('/home')}} class="h-10">
     <img src="/cr_logo.webp" alt="Couch Rift Logo" class="h-10"/>
   </Button>
@@ -31,7 +31,7 @@
   </div>
 </header>
 
-<div class="flex flex-col flex-1 items-center gap-6">
+<div class="flex flex-col flex-1 items-center gap-6 p-4">
 
   <div class="flex justify-center -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
 
