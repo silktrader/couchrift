@@ -449,12 +449,12 @@ export function getEndedLoungeMatches(loungeId: string) {
              matchedAt,
              json_group_array(DISTINCT g.name) AS genres
       FROM lounge_matches lm
-               LEFT JOIN films ON filmId = lm.filmId
+               LEFT JOIN films ON films.id = lm.filmId
                LEFT JOIN film_genres AS fg ON fg.film_id = lm.filmId
                LEFT JOIN genres g ON g.id = fg.genre_id
-      WHERE loungeId = @loungeId
-      GROUP BY lm.filmId, matchedAt
-      ORDER BY matchedAt
+      WHERE lm.loungeId = @loungeId
+      GROUP BY lm.filmId, lm.matchedAt
+      ORDER BY lm.matchedAt
   `).all({ loungeId })
 
   // Must expect matches in ended lounges

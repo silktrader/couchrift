@@ -152,7 +152,7 @@ export function getEndedLoungeWithDetails(loungeId: string, userId: string) {
   const participants = getLoungeParticipants(loungeId)
   if (!participants.some(p => p.id === userId)) return fail('FORBIDDEN_ACCESS')
 
-  /// Get matches and check for existence
+  // Get matches and check for existence
   const matches = getEndedLoungeMatches(loungeId)
 
   return succeed({
