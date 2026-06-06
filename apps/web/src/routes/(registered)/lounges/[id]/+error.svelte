@@ -4,6 +4,7 @@
   import { ChevronRight, ArrowLeft } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button'
   import * as Item from '$lib/components/ui/item/index.js'
+  import SubpageHeader from '$lib/components/layout/subpage-header/subpage-header.svelte'
 
   function goBack() {
     if (browser) window.history.back()
@@ -25,11 +26,7 @@
 
 <div class="flex flex-1 flex-col items-center mb-12 p-4">
 
-  <header class="w-full h-12 mb-6">
-    <Button size="icon-lg" variant="ghost" onclick={goBack}>
-      <ArrowLeft class="size-8"/>
-    </Button>
-  </header>
+  <SubpageHeader/>
 
   <div class="flex flex-col gap-2 items-center">
     <img src="/couch_error.webp"

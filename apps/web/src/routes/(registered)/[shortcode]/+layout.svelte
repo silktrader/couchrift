@@ -8,7 +8,7 @@
 
   const ls = setLoungeContext(untrack(() => new LoungeService(data.lounge)))
   const loungeWaiting = $derived(ls.lounge.startedAt === null)
-  const pageWaiting = $derived(page.url.pathname.endsWith('/waiting'))
+  const pageWaiting = $derived(page.url.pathname.startsWith(`/${ls.lounge.shortcode}/waiting`))
 
   // Clean up web socket connections on navigating away
   $effect(() => {

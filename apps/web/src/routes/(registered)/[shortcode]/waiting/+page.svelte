@@ -7,7 +7,7 @@
   import { Share2, Copy, RefreshCw, UserX, LogOut } from '@lucide/svelte'
   import { getUserContext } from '$lib/userService.svelte'
   import AppHeader from '$lib/components/layout/app-header.svelte'
-  import { goto } from '\$app/navigation'
+  import { goto } from '$app/navigation'
   import { toast } from 'svelte-sonner'
   import type { LoungeParticipant } from '@couchrift/shared/schemas/primitives.ts'
 
@@ -100,7 +100,7 @@
 
 </script>
 
-<div class="flex h-full w-full flex-col gap-12">
+<div class="flex h-full w-full flex-col gap-12 mb-4">
 
   <AppHeader user={us.user}/>
 
@@ -168,9 +168,14 @@
   </div>
 
   {#if isCreator}
-    <div class="flex items-center justify-center gap-6">
-      <Button size="lg" onclick={handleStartLounge}>Start</Button>
-      <Button size="lg" variant="destructive" onclick={handleDeleteLounge}>Delete</Button>
+    <div class="flex flex-col items-center justify-center gap-6">
+      <Button size="lg" onclick={handleStartLounge} class="w-1/2">Start</Button>
+      <Button size="lg"
+              variant="secondary"
+              href={`/${ls.lounge.shortcode}/waiting/settings`}
+              class="w-1/2">Configure
+      </Button>
+      <Button size="lg" variant="destructive" onclick={handleDeleteLounge} class="w-1/2">Delete</Button>
     </div>
   {/if}
 </div>

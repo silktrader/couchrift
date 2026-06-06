@@ -9,7 +9,7 @@
   import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut, CircleAlert, X } from '@lucide/svelte'
   import { goto } from '\$app/navigation'
   import { getUserContext } from '$lib/userService.svelte.js'
-  import { createLounge, leaveLounge } from '$lib/loungeService.svelte.js'
+  import { createLounge, leaveLounge, defaultSettings } from '$lib/loungeService.svelte.js'
   import { flip } from 'svelte/animate'
   import { formatRelativeTime } from '$lib/dates'
   import { untrack } from 'svelte'
@@ -29,10 +29,11 @@
   let shortcodeError = $state('')
 
   async function handleCreateLounge() {
-    const result = await createLounge({ maxDuration: 300 })
+    const result = await createLounge(defaultSettings)
     if (result.ok) {
       await goto(`${result.data.shortcode}/waiting`)
     } else {
+      // tk display error
       console.error(result.error)
     }
   }
@@ -70,7 +71,7 @@
 <AppHeader user={us.user}/>
 
 <!-- Main Actions -->
-<section class="flex w-1/2 flex-col justify-center self-center gap-6 my-16 shrink-0 p-4">
+<section class="flex w-1/2 flex-col justify-center self-center gap-6 mt-4 mb-8 shrink-0 p-4">
 
   {#if shortcodeError}
 
@@ -172,8 +173,7 @@
           <div class="w-full" animate:flip>
             <Item.Root variant="outline" class="w-full" onclick={() => goto(`/lounges/${lounge.id}`)}>
               <Item.Media>
-                <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
-
+                <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-muted-foreground items-center">
                   {#each lounge.participants as participant (participant.id)}
                     <Avatar.Root class="size-12">
                       {#if participant.image}
@@ -186,15 +186,15 @@
               </Item.Media>
 
               <!-- Status -->
-              <div class="flex flex-1 justify-end">
-                <Badge class="min-h-5 min-w-5 rounded-full px-1 py-3 [font-variant:small-caps]" variant="secondary">
-                  matched
-                </Badge>
-              </div>
+              <!--               <div class="flex flex-1 justify-end"> -->
+              <!--                 <Badge class="min-h-5 min-w-5 rounded-full px-1 py-3 [font-variant:small-caps]" variant="secondary"> -->
+              <!--                   matched -->
+              <!--                 </Badge> -->
+              <!--               </div> -->
 
               <Item.Content class="flex items-end">
                 <Item.Title
-                    class="text-md font-mono font-semibold tracking-wider">{lounge.matches[0].title}</Item.Title>
+                    class="text-md font-bebas font-semibold tracking-wider">{lounge.matches[0].title}</Item.Title>
                 <Item.Description class="text-sm italic">{formatRelativeTime(lounge.endedAt)}</Item.Description>
               </Item.Content>
 
