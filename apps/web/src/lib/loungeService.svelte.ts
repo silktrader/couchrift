@@ -9,11 +9,20 @@ import { client } from '$lib/et-api'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import type { LoungeParticipant } from '@couchrift/shared/schemas/primitives.ts'
 import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
+import { filmConfig } from '@couchrift/shared/config/film.ts'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
 // Used to record pages' registered event handlers
 type LoungeListener = (event: WsLoungeEvent) => void
+
+export const defaultSettings: LoungeSettings = {
+  minRuntime:     filmConfig.runtime.min,
+  maxRuntime:     filmConfig.runtime.max,
+  minReleaseYear: filmConfig.year.min,
+  maxReleaseYear: new Date().getFullYear(),
+  excludedGenres: []
+}
 
 export class LoungeService {
   private _lounge: LoungeResponse
@@ -132,14 +141,15 @@ export class LoungeService {
 export const [getLoungeContext, setLoungeContext] = createContext<LoungeService>()
 
 export async function createLounge(settings: LoungeSettings) {
-  const result = await apiPost<LoungeCreateResponse>('lounges', { settings })
-  switch (result.type) {
-    case 'success':
-      return succeed({ shortcode: result.data.shortcode })
-    case 'empty':
-      return fail('MISSING_DATA')
+  const { data, error } = await client.api.lounges.post({ settings })
+  if (data) return succeed({ shortcode: data.shortcode })
+  switch (error.status) {
+    case 401:
+      return fail('AUTHORIZATION_ERROR')
+    case 422:
+      return fail('VALIDATION_ERROR')
     default:
-      return fail('UNKNOWN')
+      return fail('UNKNOWN_ERROR')
   }
 }
 
@@ -216,5 +226,23 @@ export async function startLounge(loungeId: string) {
       return fail('There aren\'t enough films to start the lounge. Try again, in ten minutes.')
     default:
       return fail(COMMON_MESSAGES[error.value.type])
+  }
+}
+
+export async function updateSettings(loungeId: string, settings: LoungeSettings) {
+  const { error } = await client.api.lounges({ loungeId }).settings.put(settings)
+  if (!error) return succeed()
+
+  switch (error.value.type) {
+    case 'UNAUTHORIZED':
+      return fail('Authorisation error.')
+    case 'LOUNGE_MISSING':
+      return fail('Lounge not found.')
+    case 'FORBIDDEN_ACCESS':
+      return fail('You cannot change the lounge settings.')
+    case 'LOUNGE_STARTED':
+      return fail('The lounge already started.')
+    case 'validation':
+      return fail('Invalid settings provided.')
   }
 }
