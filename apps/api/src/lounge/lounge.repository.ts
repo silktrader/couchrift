@@ -1,6 +1,6 @@
 import db from '../db'
 import type { AddLoungeData } from './lounge.models'
-import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
+import type { LoungeResponse, LoungeSettings } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
 import type { TmdbFilm, FilmPerson } from '@couchrift/shared/schemas/tmdbFilm.ts'
@@ -24,6 +24,14 @@ export function addLounge(data: AddLoungeData) {
   })
 
   tx()
+}
+
+export function setLoungeSettings(loungeId: string, settings: LoungeSettings) {
+  return db.query(`
+      UPDATE lounges
+      SET settings = @settings
+      WHERE id = @loungeId
+  `).run({ loungeId, settings: JSON.stringify(settings) })
 }
 
 export function deleteLounge(loungeId: string, requesterId: string) {

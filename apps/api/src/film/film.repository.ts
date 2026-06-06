@@ -23,6 +23,13 @@ export function insertGenres(genres: TmdbGenre[]) {
   }).immediate(genres)
 }
 
+export function getGenres() {
+  return db.query<{ id: number, name: string }, []>(`
+      SELECT id, name
+      FROM genres
+  `).all()
+}
+
 export function countFilms(): number {
   const { total } = db.query(`
       SELECT count(id) AS total

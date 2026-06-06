@@ -2,9 +2,14 @@ import { Type, type Static } from '@sinclair/typebox'
 import {
   TimestampSchema, NullableTimestamp, UserIdSchema, ShortcodeSchema, LoungeParticipantSchema, LoungeIdSchema
 } from './primitives.ts'
+import { filmConfig } from '../config/film.ts'
 
 export const LoungeSettingsSchema = Type.Object({
-  maxDuration: Type.Integer({ minimum: 20 })
+  minRuntime:     Type.Integer({ minimum: filmConfig.runtime.min, maximum: filmConfig.runtime.max }),
+  maxRuntime:     Type.Integer({ minimum: filmConfig.runtime.min, maximum: filmConfig.runtime.max }),
+  minReleaseYear: Type.Integer({ minimum: filmConfig.year.min }),
+  maxReleaseYear: Type.Integer({ minimum: filmConfig.year.min }),
+  excludedGenres: Type.Array(Type.Integer())
 })
 export type LoungeSettings = Static<typeof LoungeSettingsSchema>
 

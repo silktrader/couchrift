@@ -1,10 +1,10 @@
 export const filmConfig = {
   runtime: {
-    min: 25,
-    max: 500
+    min: 45,
+    max: 180
   },
   year:    {
-    min: 1880
+    min: 1906
   },
   people:  {
     max: 12

@@ -3,18 +3,19 @@ import {
   addLounge, getActiveLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData,
   insertSwipe,
-  getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges
+  getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges, setLoungeSettings
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
-import type { LoungeResponse } from '@couchrift/shared/schemas/lounge'
+import type { LoungeResponse, LoungeSettings } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import type { AddSwipeData } from './lounge.models.ts'
 import { getFilmDetails } from '../film/film.repository.ts'
 import { broadcastLoungeMatch } from './lounge.ws.ts'
+import db from '../db'
 
 export type CreateLoungeResult = { ok: true; shortcode: Shortcode } | { ok: false; error: 'DB_ERROR' }
 
-export function createLounge(userId: string, settings: { maxDuration: number }):
+export function createLounge(userId: string, settings: LoungeSettings):
   CreateLoungeResult {
 
   // Generate an ID and timestamp
@@ -36,6 +37,19 @@ export function createLounge(userId: string, settings: { maxDuration: number }):
     console.error('Lounge creation failed: ', error)
     return { ok: false, error: 'DB_ERROR' }
   }
+}
+
+export function updateLoungeSettings(userId: string, loungeId: string, settings: LoungeSettings) {
+  // Check whether the user can update the lounge's settings
+  const lounge = getLoungeData(loungeId)
+  if (!lounge) return fail('LOUNGE_MISSING')
+  if (lounge.creatorId !== userId) return fail('FORBIDDEN_ACCESS')
+  if (lounge.startedAt) return fail('LOUNGE_STARTED')
+
+  // Proceed with the update
+  const update = setLoungeSettings(loungeId, settings)
+  if (update.changes === 0) throw new Error('[EXC] Expected lounge changes but none detected.')
+  return succeed()
 }
 
 export function removeLounge(loungeId: string, requesterId: string) {
@@ -135,7 +149,7 @@ export function saveSwipe(data: AddSwipeData) {
     const film = getFilmDetails(data.filmId)
     // possible path when swipes outlive the films they reference
     // TODO: add DB constraint
-    if (!film) throw new Error('Match detected but film not found.')
+    if (!film) throw new Error('[EXC] Match detected but film not found.')
     broadcastLoungeMatch(data.loungeId, film)
   }
 

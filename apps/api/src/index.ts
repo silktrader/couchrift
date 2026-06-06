@@ -8,6 +8,7 @@ import { AVATAR_CONFIG } from './user/user.service'
 import { loungeController } from './lounge/lounge.controller'
 import { loungeWsController } from './lounge/lounge.ws'
 import { startTmdbIngestion } from './film/tmdb-ingestion.ts'
+import { filmController } from './film/film.controller.ts'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -33,6 +34,7 @@ const app = new Elysia()
   .group('/api', (app) => app.get('/hello', () => ({ message: 'Hello from API' })))
   // tk review grouping
   .use(userController)
+  .use(filmController)
   .use(loungeController)
   .use(loungeWsController)
   .listen({ port: 3000 })

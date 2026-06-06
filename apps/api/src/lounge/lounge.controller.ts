@@ -3,9 +3,9 @@ import { betterAuth } from '../lib/auth-plugin'
 import {
   createLounge, getActiveLoungeByCodeAndUser, getUserActiveLoungesWithDetails, joinLounge,
   removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe,
-  getEndedLoungeWithDetails, getUserEndedLoungesWithDetails
+  getEndedLoungeWithDetails, getUserEndedLoungesWithDetails, updateLoungeSettings
 } from './lounge.service'
-import { LoungeCreateSchema } from '@couchrift/shared/schemas/lounge'
+import { LoungeCreateSchema, LoungeSettingsSchema } from '@couchrift/shared/schemas/lounge'
 import {
   broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved, broadcastLoungeStarted
 } from './lounge.ws'
@@ -20,15 +20,32 @@ export const loungeController = new Elysia()
     const result = createLounge(user.id, body.settings)
     if (result.ok) return { shortcode: result.shortcode }
 
-    switch (result.error) {
-      case 'DB_ERROR':
-        return status(500, { message: 'Failed to create lounge' })
-      default:
-        return status(500, { message: 'Unknown error' })
+    if (result.error === 'DB_ERROR') {
+      return status(500, { message: 'Failed to create lounge' })
+    } else {
+      return status(500, { message: 'Unknown error' })
     }
   }, {
     auth: true,
     body: LoungeCreateSchema
+  })
+
+  // Change lounge settings
+  .put('/api/lounges/:loungeId/settings', async ({ user, body, status, params: { loungeId } }) => {
+    const result = updateLoungeSettings(user.id, loungeId, body)
+    if (result.ok) return status(204)
+
+    const code = {
+      LOUNGE_MISSING:   404,
+      LOUNGE_STARTED:   400,
+      FORBIDDEN_ACCESS: 403
+    } as const
+
+    return status(code[result.error], { type: result.error })
+  }, {
+    auth:   true,
+    params: t.Object({ loungeId: LoungeIdSchema }),
+    body:   LoungeSettingsSchema
   })
 
   // Delete lounge
