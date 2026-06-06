@@ -123,6 +123,11 @@ export class LoungeService {
       this._match = event.match
       this.emit(event)
     })
+
+    this.ws.on('lounge_settings_updated', event => {
+      this._lounge.settings = event.data.settings
+      this.emit(event)
+    })
   }
 
   // Callers must unsubscribe otherwise listeners will leak.

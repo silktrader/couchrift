@@ -7,7 +7,8 @@ import {
 } from './lounge.service'
 import { LoungeCreateSchema, LoungeSettingsSchema } from '@couchrift/shared/schemas/lounge'
 import {
-  broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved, broadcastLoungeStarted
+  broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved, broadcastLoungeStarted,
+  broadcastLoungeSettingsUpdate
 } from './lounge.ws'
 import { ShortcodeSchema, LoungeIdSchema, UserIdSchema, FilmIdSchema } from '@couchrift/shared/schemas/primitives'
 
@@ -33,7 +34,10 @@ export const loungeController = new Elysia()
   // Change lounge settings
   .put('/api/lounges/:loungeId/settings', async ({ user, body, status, params: { loungeId } }) => {
     const result = updateLoungeSettings(user.id, loungeId, body)
-    if (result.ok) return status(204)
+    if (result.ok) {
+      broadcastLoungeSettingsUpdate(loungeId, body)
+      return status(204)
+    }
 
     const code = {
       LOUNGE_MISSING:   404,

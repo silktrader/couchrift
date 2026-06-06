@@ -52,6 +52,8 @@
         if (event.type === 'lounge_deleted' && ls.lounge.creatorId !== us.user.id) {
           toast.warning(`Lounge #${ls.lounge.shortcode} deleted. You were redirected to your home page.`)
           goto('/home')
+        } else if (event.type === 'lounge_settings_updated' && ls.lounge.creatorId !== us.user.id) {
+          toast.info('Lounge settings updated.')
         }
       })
     )

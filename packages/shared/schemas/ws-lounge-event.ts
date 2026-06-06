@@ -1,5 +1,6 @@
 import type { LoungeParticipant } from './primitives.ts'
 import type { TmdbFilm } from './tmdbFilm.ts'
+import type { LoungeSettings } from './lounge.ts'
 
 export type WsLoungeEvent =
   {
@@ -24,4 +25,8 @@ export type WsLoungeEvent =
   } |
   {
     type: 'lounge_deleted'
+  } |
+  {
+    type: 'lounge_settings_updated'
+    data: { settings: LoungeSettings }
   }
