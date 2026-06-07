@@ -14,51 +14,53 @@
   const ls = getLoungeContext()
   const us = getUserContext()
 
-  let participants = $derived(ls.lounge?.participants ?? [])
+  let participants = $derived(ls.lounge.participants)
   let isCreator = $derived(ls.lounge.creatorId === us.user.id)
 
   $effect(() => {
-    const subscriptions: (() => void)[] = []
+    return ls.onEvent((event) => {
 
-    subscriptions.push(
-      ls.onEvent((event) => {
-        if (event.type === 'user_removed') {
+      switch (event.type) {
+
+        case 'lounge_started':
+          goto(`/${ls.lounge.shortcode}`)
+          return
+
+        case 'lounge_matched':
+          return
+
+        case 'user_removed':
           if (event.user.id === us.user.id) {
             toast.warning(`You were removed from lounge #${ls.lounge.shortcode}.`)
             goto('/home')
           } else {
             toast.info(`${event.user.name} was removed from the lounge.`)
           }
-        }
-      })
-    )
+          return
 
-    subscriptions.push(
-      ls.onEvent((event) => {
-        if (event.type === 'user_left' && event.user.id !== us.user.id)
-          toast.info(`${event.user.name} left the lounge.`)
-      })
-    )
+        case 'user_left':
+          if (event.user.id !== us.user.id)
+            toast.info(`${event.user.name} left the lounge.`)
+          return
 
-    subscriptions.push(
-      ls.onEvent((event) => {
-        if (event.type === 'user_joined' && event.user.id !== us.user.id)
-          toast.info(`${event.user.name} joined the lounge.`)
-      })
-    )
+        case 'user_joined':
+          if (event.user.id !== us.user.id)
+            toast.info(`${event.user.name} joined the lounge.`)
+          return
 
-    subscriptions.push(
-      ls.onEvent((event) => {
-        if (event.type === 'lounge_deleted' && ls.lounge.creatorId !== us.user.id) {
-          toast.warning(`Lounge #${ls.lounge.shortcode} deleted. You were redirected to your home page.`)
-          goto('/home')
-        } else if (event.type === 'lounge_settings_updated' && ls.lounge.creatorId !== us.user.id) {
-          toast.info('Lounge settings updated.')
-        }
-      })
-    )
+        case 'lounge_deleted':
+          if (!isCreator) {
+            toast.warning(`Lounge #${ls.lounge.shortcode} deleted. You were redirected to your home page.`)
+            goto('/home')
+          }
+          return
 
-    return () => subscriptions.forEach((unsub) => unsub())
+        case 'lounge_settings_updated':
+          if (!isCreator)
+            toast.info('Lounge settings updated.')
+          return
+      }
+    })
   })
 
   async function handleLeaveLounge() {
@@ -92,9 +94,9 @@
 
   async function handleStartLounge() {
     const result = await startLounge(ls.lounge.id)
+    // Navigation is handled by the WS event listener
     if (result.ok) {
       toast.success(`You started lounge #${ls.lounge.shortcode}.`)
-      await goto(`/${ls.lounge.shortcode}`)
     } else {
       toast.error(result.error)
     }
