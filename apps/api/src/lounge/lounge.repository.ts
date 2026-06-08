@@ -1,6 +1,6 @@
 import db from '../db'
 import type { AddLoungeData } from './lounge.models'
-import type { LoungeResponse, LoungeSettings } from '@couchrift/shared/schemas/lounge'
+import { type LoungeResponse, type LoungeSettings, parseLoungeSettings } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
 import type { TmdbFilm, FilmPerson } from '@couchrift/shared/schemas/tmdbFilm.ts'
@@ -238,10 +238,10 @@ export function selectLoungeParticipant(userId: string, loungeId: string) {
 export function setLoungeStartWithInitialFilms(loungeId: string, requesterId: string, filmsPerParticipant: number) {
   return runTransactionWithRollback(() => {
     // Perform initial checks WITHIN the transaction to avoid race conditions
-    const lounge = db.query<{ creatorId: string, startedAt: number | null, participants: number }, {
+    const lounge = db.query<{ creatorId: string, startedAt: number | null, settings: string, participants: number }, {
       loungeId: string
     }>(`
-        SELECT creatorId, startedAt, count(lp.participantId) as participants
+        SELECT creatorId, startedAt, settings, count(lp.participantId) as participants
         FROM lounges
                  LEFT JOIN lounge_participants lp ON lounges.id = lp.loungeId
         WHERE id = @loungeId
@@ -255,13 +255,41 @@ export function setLoungeStartWithInitialFilms(loungeId: string, requesterId: st
     // Determine the number of films to gather
     const total = filmsPerParticipant * lounge.participants
 
+    // Safely parse and validate the settings
+    let settings = parseLoungeSettings(lounge.settings)
+
     // Attempt to gather random films
-    const randomFilms = db.query<{ id: number }, { total: number }>(`
+    const randomFilms = db.query<
+      { id: number },
+      {
+        total: number
+        minRuntime: number
+        maxRuntime: number
+        minReleaseYear: number
+        maxReleaseYear: number
+        excludedGenresJson: string
+      }>(`
         SELECT id
         FROM films
+        WHERE runtime >= @minRuntime
+          AND runtime <= @maxRuntime
+          AND year >= @minReleaseYear
+          AND year <= @maxReleaseYear
+          AND NOT EXISTS (SELECT 1
+                          FROM film_genres
+                          WHERE film_genres.film_id = films.id
+                            AND film_genres.genre_id IN (SELECT value FROM json_each(@excludedGenresJson)))
         ORDER BY random()
         LIMIT @total
-    `).all({ total })
+    `).all({
+      total,
+      minRuntime:         settings.minRuntime,
+      maxRuntime:         settings.maxRuntime,
+      minReleaseYear:     settings.minReleaseYear,
+      maxReleaseYear:     settings.maxReleaseYear,
+      excludedGenresJson: JSON.stringify(settings.excludedGenres)
+    })
+    
     if (randomFilms.length < total) return fail('FILMS_MISSING')
 
     // Insert the randomly gathered films into the lounge's pool.

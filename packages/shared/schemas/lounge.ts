@@ -3,6 +3,7 @@ import {
   TimestampSchema, NullableTimestamp, UserIdSchema, ShortcodeSchema, LoungeParticipantSchema, LoungeIdSchema
 } from './primitives.ts'
 import { filmConfig } from '../config/film.ts'
+import { Value } from '@sinclair/typebox/value'
 
 export const LoungeSettingsSchema = Type.Object({
   minRuntime:     Type.Integer({ minimum: filmConfig.runtime.min, maximum: filmConfig.runtime.max }),
@@ -12,6 +13,27 @@ export const LoungeSettingsSchema = Type.Object({
   excludedGenres: Type.Array(Type.Integer())
 })
 export type LoungeSettings = Static<typeof LoungeSettingsSchema>
+
+const defaultSettings: LoungeSettings = {
+  minRuntime:     filmConfig.runtime.min,
+  maxRuntime:     filmConfig.runtime.max,
+  minReleaseYear: filmConfig.year.min,
+  maxReleaseYear: new Date().getFullYear(),
+  excludedGenres: []
+}
+
+// Attempts to parse the JSON settings string and returns a default on validation failure with notification.
+export function parseLoungeSettings(settingsJson: string): LoungeSettings {
+  try {
+    const parsed = JSON.parse(settingsJson)
+    if (Value.Check(LoungeSettingsSchema, parsed)) {
+      return parsed
+    }
+  } catch (error) {
+    console.error('Failed to parse or validate lounge settings, falling back to default:', error)
+  }
+  return defaultSettings
+}
 
 export const LoungeCreateSchema = Type.Object({
   settings: LoungeSettingsSchema
@@ -36,4 +58,5 @@ export const LeaveLoungeResponseSchema = Type.Object({
   deletedLounge: Type.Boolean()
 })
 export type LeaveLoungeResponse = Static<typeof LeaveLoungeResponseSchema>
+
 
