@@ -115,6 +115,11 @@ export class LoungeService {
       this.emit(event)
     })
 
+    this.ws.on('lounge_started', event => {
+      this._lounge.startedAt = event.data.startedAt
+      this.emit(event)
+    })
+
     this.ws.on('lounge_deleted', event => {
       this.emit(event)
     })

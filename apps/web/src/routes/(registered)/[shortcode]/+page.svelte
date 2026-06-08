@@ -85,7 +85,8 @@
         <img src="/cr_logo.webp" alt="Couch Rift Logo"/>
       </Button>
 
-      <Button variant="ghost" size="icon-lg" class="absolute right-2 min-h-14">
+      <Button variant="ghost" size="icon-lg" class="absolute right-2 min-h-14"
+              href={`/${ls.lounge.shortcode}/settings`}>
         <SlidersHorizontal class="size-6"/>
       </Button>
     </div>

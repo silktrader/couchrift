@@ -1,8 +1,6 @@
 <script lang="ts">
   import { getLoungeContext, updateSettings } from '$lib/loungeService.svelte.js'
   import { Button } from '$lib/components/ui/button'
-  import * as Item from '$lib/components/ui/item'
-  import { Share2, Copy, RefreshCw, UserX, LogOut, ArrowLeft } from '@lucide/svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Slider } from '$lib/components/ui/slider'
   import * as ToggleGroup from '$lib/components/ui/toggle-group'
