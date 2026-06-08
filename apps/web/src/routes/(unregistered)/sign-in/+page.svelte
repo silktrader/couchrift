@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button'
   import * as Field from '$lib/components/ui/field'
   import { goto } from '$app/navigation'
+  import { page } from '$app/state'
   import { authClient } from '$lib/auth-client'
   import { LoginSchema, type Login } from '@couchrift/shared'
   import { LoaderPinwheel, CircleAlert, EyeOff, Eye } from '@lucide/svelte'
@@ -20,6 +21,9 @@
   let isSubmitting = $state(false)
   let isValid = $derived(Value.Check(LoginSchema, form))
   let cantSubmit = $derived(isSubmitting || !isValid)
+
+  // Get the redirect path, falling back to '/home' if not provided
+  const redirectTo = $derived(page.url.searchParams.get('redirectTo') || '/home')
 
   function validate() {
     // Single properties check would break cross-field validation where one field depends on another
@@ -64,7 +68,7 @@
       return
     }
 
-    await goto('/home', { replaceState: true })
+    await goto(redirectTo, { replaceState: true })
   }
 </script>
 

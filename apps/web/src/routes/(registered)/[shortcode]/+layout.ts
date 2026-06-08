@@ -1,5 +1,5 @@
 import type { LayoutLoad } from './$types'
-import { error as svelteError, redirect } from '@sveltejs/kit'
+import { error as svelteError } from '@sveltejs/kit'
 import { client } from '$lib/et-api'
 
 export const load: LayoutLoad = async ({ params }) => {
