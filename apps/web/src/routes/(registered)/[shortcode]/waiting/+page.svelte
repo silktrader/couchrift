@@ -4,6 +4,7 @@
   import * as Item from '$lib/components/ui/item'
   import * as Card from '$lib/components/ui/card'
   import * as Avatar from '$lib/components/ui/avatar'
+  import { CopyButton } from '$lib/components/ui/copy-button'
   import { Share2, Copy, RefreshCw, UserX, LogOut } from '@lucide/svelte'
   import { getUserContext } from '$lib/userService.svelte'
   import AppHeader from '$lib/components/layout/app-header.svelte'
@@ -16,7 +17,7 @@
 
   let participants = $derived(ls.lounge.participants)
   let isCreator = $derived(ls.lounge.creatorId === us.user.id)
-  
+
   async function handleLeaveLounge() {
     const result = await leaveLounge(ls.lounge.id, us.user.id)
     if (result.ok) {
@@ -58,7 +59,7 @@
 
 </script>
 
-<div class="flex h-full w-full flex-col gap-12 mb-4">
+<div class="flex flex-1 w-full flex-col gap-12 mb-8">
 
   <AppHeader user={us.user}/>
 
@@ -66,19 +67,9 @@
     <span class="text-muted-foreground">Shortcode</span>
     <Card.Root>
       <Card.Content>
-        <div class="flex w-full flex-col items-center gap-4">
+        <div class="flex w-full flex-row items-center gap-2">
           <span class="font-mono text-3xl tracking-widest">{ls.lounge.shortcode}</span>
-          <div class="flex gap-2">
-            <Button variant="outline" size="icon">
-              <RefreshCw/>
-            </Button>
-            <Button variant="outline" size="icon">
-              <Share2/>
-            </Button>
-            <Button variant="outline" size="icon">
-              <Copy/>
-            </Button>
-          </div>
+          <CopyButton text={ls.lounge.shortcode}/>
         </div>
       </Card.Content>
     </Card.Root>
@@ -87,7 +78,7 @@
   <!--    Participants-->
   <div class="flex w-full max-w-lg flex-1 flex-col items-center gap-4">
     <h3 class="text-muted-foreground">Participants</h3>
-    <div class="flex w-full flex-col justify-center gap-6">
+    <div class="flex flex-col justify-center gap-6 w-2/3">
       {#each participants as participant (participant.id)}
         {@const isUser = participant.id === us.user.id}
         <Item.Root variant="outline">
@@ -126,14 +117,22 @@
   </div>
 
   {#if isCreator}
-    <div class="flex flex-col items-center justify-center gap-6">
-      <Button size="lg" onclick={handleStartLounge} class="w-1/2">Start</Button>
+    <div class="flex flex-col items-center justify-end gap-6 flex-1">
+      {#if ls.lounge.participants.length > 1}
+        <Button size="lg"
+                onclick={handleStartLounge}
+                class="w-1/2">
+          Start
+        </Button>
+      {:else}
+        <span class="text-sm italic text-muted-foreground">... wait for another participant to start</span>
+      {/if}
       <Button size="lg"
               variant="secondary"
               href={`/${ls.lounge.shortcode}/waiting/settings`}
-              class="w-1/2">Configure
+              class="w-1/2">Customise
       </Button>
-      <Button size="lg" variant="destructive" onclick={handleDeleteLounge} class="w-1/2">Delete</Button>
+      <Button size="lg" variant="destructive" onclick={handleDeleteLounge} class="w-1/2">Abort</Button>
     </div>
   {/if}
 </div>
