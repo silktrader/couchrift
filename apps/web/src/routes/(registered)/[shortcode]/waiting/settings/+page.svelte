@@ -9,10 +9,10 @@
   import { filmConfig } from '@couchrift/shared/config/film.ts'
   import { toast } from 'svelte-sonner'
   import { goto } from '\$app/navigation'
+  import { getGenreContext } from '$lib/genreService.svelte.js'
 
   const ls = getLoungeContext()
-
-  let { data }: PageProps = $props()
+  const gs = getGenreContext()
 
   let excludedGenres: string[] = $state(ls.lounge.settings.excludedGenres.map(String))
 
@@ -99,7 +99,7 @@
                       class="flex-wrap"
                       bind:value={excludedGenres}>
 
-      {#each data.genres as genre}
+      {#each gs.genres as genre}
         <ToggleGroup.Item
             value={genre.id.toString()}
             aria-label={genre.name}

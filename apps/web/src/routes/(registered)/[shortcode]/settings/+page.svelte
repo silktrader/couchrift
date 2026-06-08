@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { getLoungeContext, updateSettings, deleteLounge } from '$lib/loungeService.svelte.js'
+  import { getLoungeContext, deleteLounge } from '$lib/loungeService.svelte.js'
+  import { getUserContext } from '$lib/userService.svelte.js'
+  import { getGenreContext } from '$lib/genreService.svelte.js'
   import { Badge } from '$lib/components/ui/badge'
-  import { Button, buttonVariants } from '$lib/components/ui/button'
+  import { buttonVariants } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
   import * as AlertDialog from '$lib/components/ui/alert-dialog'
   import SubpageHeader from '$lib/components/layout/subpage-header/subpage-header.svelte'
-  import { getUserContext } from '$lib/userService.svelte.js'
   import { toast } from 'svelte-sonner'
   import { goto } from '$app/navigation'
 
   const ls = getLoungeContext()
   const us = getUserContext()
+  const gs = getGenreContext()
 
   let excludedGenres = $derived(ls.lounge.settings.excludedGenres.map(String))
   let settings = $derived(ls.lounge.settings)
@@ -91,24 +93,20 @@
         </div>
       </div>
 
-      {#if excludedGenres.length === 0}
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span class="font-medium text-muted-foreground">Excluded Genres</span>
-          <span>None</span>
-        </div>
-      {:else}
-
-        <div class="flex flex-col gap-2">
-          <span class="font-medium text-muted-foreground">Excluded Genres</span>
-          <div class="flex flex-wrap gap-1.5">
-            {#each excludedGenres as genre}
-              <Badge variant="destructive" class="px-2 py-0.5 text-xs font-normal capitalize tracking-wide">
-                {genre}
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <span class="font-medium text-muted-foreground shrink-0">Excluded Genres</span>
+        <div class="flex flex-wrap gap-2 justify-end">
+          {#if excludedGenres.length > 0}
+            {#each excludedGenres as genreId}
+              <Badge variant="secondary" class="px-2 py-3 text-md capitalize line-through">
+                {gs.getName(genreId)}
               </Badge>
             {/each}
-          </div>
+          {:else}
+            <span>None</span>
+          {/if}
         </div>
-      {/if}
+      </div>
     </Card.Content>
   </Card.Root>
 
