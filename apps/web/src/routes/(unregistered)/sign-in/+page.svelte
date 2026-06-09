@@ -72,11 +72,10 @@
   }
 </script>
 
-<div class="flex flex-1 w-full flex-col px-12 justify-between">
+<div class="flex flex-1 w-full flex-col p-8 justify-between">
 
-  <header class="flex w-full items-center mb-6 text-2xl font-bebas text-red-400/80">
-    <!--     <img src="/crimson_couch.png" alt="Couch Rift Logo" class="size-18"/> -->
-    <span>Couch<span class="text-yellow-500 font-bold">|</span>Rift</span>
+  <header class="flex w-full items-center justify-center p-4">
+    <img src="/full_logo.png" alt="logo" class="w-full max-w-2/3 h-auto"/>
   </header>
 
   <form onsubmit={handleSubmit} class="flex w-full flex-col justify-center">
