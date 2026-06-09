@@ -2,33 +2,33 @@
   import type { PageProps } from './$types'
   import { Button } from '$lib/components/ui/button'
   import { formatRelativeTime } from '$lib/dates'
-  import { Menu, Calendar } from '@lucide/svelte'
+  import { Calendar, ArrowLeft } from '@lucide/svelte'
   import * as Avatar from '$lib/components/ui/avatar'
-  import { goto } from '\$app/navigation'
+  import { browser } from '$app/environment'
 
   let { data }: PageProps = $props()
 
   // Under the current model only one match is allowed per lounge
   const lounge = $derived(data.lounge)
   const match = $derived(lounge.matches[0])
+
+  function goBack() {
+    if (browser) window.history.back()
+  }
 </script>
 
-<header class="flex w-full flex-row justify-s items-start p-4">
-  <Button variant="ghost" onclick={() => { goto('/home')}} class="h-10">
-    <img src="/cr_logo.webp" alt="Couch Rift Logo" class="h-10"/>
+<header class="flex w-full flex-row px-4 py-8">
+  <Button size="icon-lg" variant="ghost" onclick={goBack}>
+    <ArrowLeft class="size-8"/>
   </Button>
 
   <h3 class="flex flex-col gap-2 items-center justify-center flex-1 h-10 pr-4">
-    <span class="flex gap-2 items-center text-muted-foreground text-lg"><Calendar class="size-4"/>
-      {formatRelativeTime(lounge.endedAt)}</span>
+    <span class="text-xl font-semibold font-bebas">{match.title}</span>
+    <span class="flex gap-2 items-center text-md text-muted-foreground"><Calendar class="size-4"/>
+      {formatRelativeTime(lounge.endedAt)}
+    </span>
   </h3>
 
-  <div class="h-10 flex items-center">
-    <Button variant="ghost" size="icon-lg">
-      <Menu class="size-6"/>
-    </Button>
-
-  </div>
 </header>
 
 <div class="flex flex-col flex-1 items-center gap-6 p-4">

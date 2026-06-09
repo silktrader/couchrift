@@ -163,7 +163,7 @@
                 <div class="flex -space-x-2 items-center">
 
                   {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class="size-12 ring-1 ring-foreground">
+                    <Avatar.Root class="size-12 ring-1">
                       {#if participant.image}
                         <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
                       {/if}
@@ -176,7 +176,7 @@
 
               <!-- Status -->
               <div class="flex flex-1 justify-end">
-                <Badge class="min-h-5 min-w-5 rounded-full px-1 py-3 [font-variant:small-caps]" variant="secondary">
+                <Badge class="min-h-5 min-w-5 rounded-full px-3 py-4 italic" variant="secondary">
                   {lounge.startedAt === null ? 'waiting' : 'started'}
                 </Badge>
               </div>
@@ -201,9 +201,9 @@
           <div class="w-full" animate:flip>
             <Item.Root variant="outline" class="w-full" onclick={() => goto(`/lounges/${lounge.id}`)}>
               <Item.Media>
-                <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-muted-foreground items-center">
+                <div class="flex -space-x-2 items-center">
                   {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class="size-12">
+                    <Avatar.Root class="size-12 ring-1">
                       {#if participant.image}
                         <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
                       {/if}
@@ -212,13 +212,6 @@
                   {/each}
                 </div>
               </Item.Media>
-
-              <!-- Status -->
-              <!--               <div class="flex flex-1 justify-end"> -->
-              <!--                 <Badge class="min-h-5 min-w-5 rounded-full px-1 py-3 [font-variant:small-caps]" variant="secondary"> -->
-              <!--                   matched -->
-              <!--                 </Badge> -->
-              <!--               </div> -->
 
               <Item.Content class="flex items-end">
                 <Item.Title
