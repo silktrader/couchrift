@@ -6,7 +6,7 @@
   import * as InputOTP from '$lib/components/ui/input-otp'
   import * as UnderlineTabs from '$lib/components/ui/underline-tabs'
   import { FieldSeparator } from '$lib/components/ui/field'
-  import { ThumbsUp, ThumbsDown, Bookmark, UserRound, LogOut, CircleAlert, X } from '@lucide/svelte'
+  import { ThumbsUp, ThumbsDown, Bookmark, UserRound, CircleAlert, X, ClipboardPaste } from '@lucide/svelte'
   import { goto } from '\$app/navigation'
   import { getUserContext } from '$lib/userService.svelte.js'
   import { createLounge, leaveLounge, defaultSettings } from '$lib/loungeService.svelte.js'
@@ -66,6 +66,21 @@
     else await goto(`/${lounge.shortcode}`)
   }
 
+  async function handlePaste() {
+    try {
+      const text = await navigator.clipboard.readText()
+      const cleaned = text.trim()
+      shortcode = cleaned.slice(0, ID_LENGTH.shortcode)
+
+      // Automatically trigger join lounge if the clipboard content is the correct length
+      if (shortcode.length === ID_LENGTH.shortcode) {
+        await handleJoinLounge()
+      }
+    } catch (err) {
+      console.error('Failed to read clipboard contents:', err)
+    }
+  }
+
 </script>
 
 <AppHeader user={us.user}/>
@@ -95,20 +110,33 @@
 
     <div class="flex flex-col items-center gap-4 min-h-20">
       <span>Enter a lounge's code:</span>
-      <InputOTP.Root
-          maxlength={ID_LENGTH.shortcode}
-          pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-          bind:value={shortcode}
-          onComplete={handleJoinLounge}
-      >
-        {#snippet children({cells})}
-          <InputOTP.Group class="m-auto">
-            {#each cells as cell (cell)}
-              <InputOTP.Slot {cell}/>
-            {/each}
-          </InputOTP.Group>
-        {/snippet}
-      </InputOTP.Root>
+      <div class="flex items-center gap-2">
+
+        <Button
+            variant="outline"
+            size="icon"
+            onclick={handlePaste}
+            title="Paste from clipboard"
+        >
+          <ClipboardPaste class="size-5"/>
+        </Button>
+
+        <InputOTP.Root
+            maxlength={ID_LENGTH.shortcode}
+            pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+            bind:value={shortcode}
+            onComplete={handleJoinLounge}
+        >
+          {#snippet children({cells})}
+            <InputOTP.Group class="m-auto">
+              {#each cells as cell (cell)}
+                <InputOTP.Slot {cell}/>
+              {/each}
+            </InputOTP.Group>
+          {/snippet}
+        </InputOTP.Root>
+
+      </div>
     </div>
   {/if}
 
