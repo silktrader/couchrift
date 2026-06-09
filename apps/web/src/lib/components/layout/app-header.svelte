@@ -14,9 +14,9 @@
   <img src="/full_logo.png" alt="logo" class="w-1/3 max-w-40 h-auto"/>
 
   <Button variant="ghost" class="rounded-full outline-1" size="icon" href="/me">
-    <Avatar.Root class="size-12">
+    <Avatar.Root class="size-14">
       {#if user.image}
-        <Avatar.Image src={`/uploads/avatars/${user.image}`} alt="User Avatar"/>
+        <Avatar.Image src={`/uploads/avatars/${user.image}`} class="ring-2 ring-foreground" alt="User Avatar"/>
       {/if}
       <Avatar.Fallback>
         {user.name[0].toLocaleUpperCase()}

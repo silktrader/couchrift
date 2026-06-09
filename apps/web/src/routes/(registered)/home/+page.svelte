@@ -132,10 +132,10 @@
           <div class="w-full" animate:flip>
             <Item.Root variant="outline" class="w-full" onclick={() => handleGotoLounge(lounge)}>
               <Item.Media>
-                <div class="flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
+                <div class="flex -space-x-2 items-center">
 
                   {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class="size-12">
+                    <Avatar.Root class="size-12 ring-1 ring-foreground">
                       {#if participant.image}
                         <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
                       {/if}
