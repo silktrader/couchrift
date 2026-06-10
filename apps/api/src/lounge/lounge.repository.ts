@@ -289,7 +289,7 @@ export function setLoungeStartWithInitialFilms(loungeId: string, requesterId: st
       maxReleaseYear:     settings.maxReleaseYear,
       excludedGenresJson: JSON.stringify(settings.excludedGenres)
     })
-    
+
     if (randomFilms.length < total) return fail('FILMS_MISSING')
 
     // Insert the randomly gathered films into the lounge's pool.
@@ -464,13 +464,29 @@ export function getEndedLounge(loungeId: string) {
 
 export function getLoungeParticipants(loungeId: string) {
   return db.query<{
-    id: string;
-    name: string;
-    image: string | null;
-  }, { loungeId: string }>(`
-      SELECT id, name, image
+    id: string
+    name: string
+    image: string | null
+    liked: number
+    disliked: number
+  }, {
+    loungeId: string
+  }>(`
+      SELECT u.id,
+             u.name,
+             u.image,
+             (SELECT COUNT(*)
+              FROM swipes
+              WHERE loungeId = lp.loungeId
+                AND userId = lp.participantId
+                AND value = 1)  AS liked,
+             (SELECT COUNT(*)
+              FROM swipes
+              WHERE loungeId = lp.loungeId
+                AND userId = lp.participantId
+                AND value = -1) AS disliked
       FROM lounge_participants lp
-               LEFT JOIN users ON lp.participantId = users.id
+               LEFT JOIN users u ON lp.participantId = u.id
       WHERE lp.loungeId = @loungeId
   `).all({ loungeId })
 }
@@ -486,7 +502,18 @@ export function getEndedLoungeMatches(loungeId: string) {
              backdrop,
              overview,
              matchedAt,
-             json_group_array(DISTINCT g.name) AS genres
+             json_group_array(DISTINCT g.name) AS genres,
+             (SELECT json_group_array(
+                             json_object(
+                                     'name', p.name,
+                                     'image', p.image,
+                                     'role', fp.role,
+                                     'priority', fp.priority
+                             )
+                     )
+              FROM film_people fp
+                       JOIN people p ON p.id = fp.personId
+              WHERE fp.filmId = lm.filmId)     AS people
       FROM lounge_matches lm
                LEFT JOIN films ON films.id = lm.filmId
                LEFT JOIN film_genres AS fg ON fg.film_id = lm.filmId
@@ -498,6 +525,10 @@ export function getEndedLoungeMatches(loungeId: string) {
 
   // Must expect matches in ended lounges
   if (matches.length === 0) throw new Error('Expected matches but none found.')
-  return matches.map(m => ({ ...m, genres: JSON.parse(m.genres) }))
+  return matches.map(m => ({
+    ...m,
+    genres: JSON.parse(m.genres) as string[],
+    people: JSON.parse(m.people) as FilmPerson[]
+  }))
 }
 

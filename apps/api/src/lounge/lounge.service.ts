@@ -171,8 +171,8 @@ export function getEndedLoungeWithDetails(loungeId: string, userId: string) {
 
   return succeed({
     ...lounge,
-    participants: participants,
-    matches:      matches
+    participants,
+    matches
   })
 }
 

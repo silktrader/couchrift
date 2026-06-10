@@ -1,7 +1,7 @@
 import db from '../db'
 import type { TmdbGenre, TmdbFilmData, TmdbFilmRow } from './film.models'
-import type { PersonRole } from '@couchrift/shared/schemas/tmdbFilm.ts'
 import type { FilmIngestionData } from './tmdb-ingestion.ts'
+import type { FilmPerson } from '@couchrift/shared/schemas/tmdbFilm.ts'
 
 export function getOldestGenreUpdate() {
   return db.query(`
@@ -16,7 +16,7 @@ export function insertGenres(genres: TmdbGenre[]) {
       db.query(`
           INSERT INTO genres (id, name, updatedAt)
           VALUES (@id, @name, @updatedAt)
-          ON CONFLICT(id) DO UPDATE SET name      = excluded.name,
+          ON CONFLICT(id) DO UPDATE SET name = excluded.name,
                                         updatedAt = @updatedAt
       `).run({ id: genre.id, name: genre.name, updatedAt: Date.now() })
     }
@@ -105,10 +105,25 @@ export function getFilmDetails(filmId: number) {
              poster,
              backdrop,
              overview,
-             json_group_array(DISTINCT g.name) AS genres
+             json_group_array(DISTINCT g.name) AS genres,
+             (SELECT json_group_array(
+                             json_object(
+                                     'name', p.name,
+                                     'image', p.image,
+                                     'role', fp.role,
+                                     'priority', fp.priority
+                             )
+                     )
+              FROM film_people fp
+                       JOIN people p ON p.id = fp.personId
+              WHERE fp.filmId = f.id)          AS people
       FROM films f
                LEFT JOIN film_genres fg ON f.id = fg.film_id
                LEFT JOIN genres g ON g.id = fg.genre_id
       WHERE f.id = @filmId`).get({ filmId })
-  return filmRow && { ...filmRow, genres: JSON.parse(filmRow.genres) as string[] }
+  return filmRow && {
+    ...filmRow,
+    genres: JSON.parse(filmRow.genres) as string[],
+    people: JSON.parse(filmRow.people) as FilmPerson[]
+  }
 }
