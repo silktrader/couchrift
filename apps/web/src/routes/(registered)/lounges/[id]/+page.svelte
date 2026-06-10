@@ -1,16 +1,24 @@
 <script lang="ts">
   import type { PageProps } from './$types'
-  import { Button } from '$lib/components/ui/button'
-  import { formatRelativeTime } from '$lib/dates'
-  import { Calendar, ArrowLeft } from '@lucide/svelte'
+  import { Button, buttonVariants } from '$lib/components/ui/button'
+  import { formatRelativeTime, formatTime, formatDate, formatDistanceBetweenDates } from '$lib/dates'
+  import { Calendar, ArrowLeft, Film, ThumbsUp, ThumbsDown, ArrowRight, Hourglass } from '@lucide/svelte'
   import * as Avatar from '$lib/components/ui/avatar'
+  import * as Card from '$lib/components/ui/card'
+  import * as Drawer from '$lib/components/ui/drawer'
+  import LoungeFilters from '$lib/components/settings/lounge-filters/lounge-filters.svelte'
   import { browser } from '$app/environment'
+  import { FilmCard } from '$lib/components/films/film-card'
+  import { Badge } from '$lib/components/ui/badge'
 
   let { data }: PageProps = $props()
 
   // Under the current model only one match is allowed per lounge
   const lounge = $derived(data.lounge)
   const match = $derived(lounge.matches[0])
+
+  const startDate = $derived(new Date(lounge.startedAt))
+  const endDate = $derived(new Date(match.matchedAt))
 
   function goBack() {
     if (browser) window.history.back()
@@ -33,25 +41,143 @@
 
 <div class="flex flex-col flex-1 items-center gap-6 p-4">
 
-  <div class="flex justify-center -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background items-center">
+  <LoungeFilters settings={lounge.settings}/>
 
-    {#each lounge.participants as participant (participant.id)}
-      <Avatar.Root class={['size-12', participant.id === lounge.creatorId && 'border-white border-2']}>
-        {#if participant.image}
-          <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
-        {/if}
-        <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
-      </Avatar.Root>
-    {/each}
+  <Card.Root class="w-full">
+    <Card.Header>
+      <Card.Title>
+        Participants
+      </Card.Title>
+      <Card.Description>
+        Users who took part in the selection process and their preferences.
+      </Card.Description>
+    </Card.Header>
 
-  </div>
-  <span class="text-muted-foreground">... all democratically elected to watch:</span>
+    <Card.Content class="flex flex-col gap-8">
 
-  <div class="relative">
-    <img src={`https://image.tmdb.org/t/p/w500/${match.poster}`}
-         alt={`${match.title} Poster`}
-         class="rounded-3xl border object-contain z-10"/>
-    <img src="/matched_stamp.webp" alt="Matched" class="absolute top-10 left-10 h-1/5 object-contain z-20"/>
-  </div>
+      {#each lounge.participants as participant (participant.id)}
+        <div class="grid grid-cols-4 items-center justify-items-end">
+          <Avatar.Root class="size-12 ring-1 justify-self-start">
+            {#if participant.image}
+              <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
+            {/if}
+            <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
+          </Avatar.Root>
+          <div class="flex gap-2 font-mono items-center">
+            <Film/>
+            <span>{participant.liked + participant.disliked}</span>
+          </div>
+          <div class="flex gap-2 font-mono items-center">
+            <ThumbsUp/>
+            <span>{participant.liked}</span>
+          </div>
+          <div class="flex gap-2 font-mono items-center">
+            <ThumbsDown/>
+            <span>{participant.disliked}</span>
+          </div>
+        </div>
+      {/each}
+
+    </Card.Content>
+  </Card.Root>
+
+  <Card.Root class="w-full">
+    <Card.Header>
+      <Card.Title>
+        Time and Day
+      </Card.Title>
+      <Card.Description>
+        How long the process took.
+      </Card.Description>
+    </Card.Header>
+
+    {#if startDate.toDateString() === endDate.toDateString()}
+      <Card.Content class="flex flex-col gap-8">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span class="font-medium text-muted-foreground">Date</span>
+          <div class="flex items-center gap-2">
+            <span>{formatDate(startDate)}</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span class="font-medium text-muted-foreground">Duration</span>
+          <div class="flex items-center gap-8">
+            <div class="flex items-center gap-1">
+              <span>{formatTime(startDate)}</span>
+              <ArrowRight class="size-4"/>
+              <span>{formatTime(endDate)}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <Hourglass class="size-4 text-muted-foreground"/>
+              <span class="text-muted-foreground">1 min.</span>
+            </div>
+          </div>
+        </div>
+      </Card.Content>
+    {:else}
+      <Card.Content class="flex flex-col gap-8">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span class="font-medium text-muted-foreground">Start</span>
+          <div class="grid grid-cols-2 items-center gap-6">
+            <span>{formatDate(startDate)}</span>
+            <div class="flex items-center gap-1">
+              <Hourglass class="size-4"/>
+              <span>{formatTime(startDate)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span class="font-medium text-muted-foreground">End</span>
+          <div class="grid grid-cols-2 items-center gap-6">
+            <span>{formatDate(endDate)}</span>
+            <div class="flex items-center gap-1">
+              <Hourglass class="size-4"/>
+              <span>{formatTime(endDate)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span class="font-medium text-muted-foreground">Duration</span>
+          <span>{formatDistanceBetweenDates(startDate, endDate)}</span>
+        </div>
+      </Card.Content>
+    {/if}
+
+  </Card.Root>
+
+  <Card.Root class="w-full">
+    <Card.Header>
+      <Card.Title>
+        Match
+      </Card.Title>
+      <Card.Description>
+        The film everybody agreed on.
+      </Card.Description>
+    </Card.Header>
+
+    <Card.Content class="flex flex-col gap-4">
+
+      <div class="flex gap-2 items-center">
+        <h3 class="text-lg font-semibold">{match.title}</h3>
+        <span class="text-xl">·</span>
+        <span class="text-sm text-muted-foreground">{match.year}</span>
+      </div>
+
+      <span class="text-sm italic">{match.overview}</span>
+
+      <Drawer.Root>
+        <Drawer.Trigger class={buttonVariants({ variant: "default" })}>
+          View Details
+        </Drawer.Trigger>
+        <Drawer.Content class="md:max-w-lg mx-auto">
+          <FilmCard film={match}/>
+        </Drawer.Content>
+      </Drawer.Root>
+
+    </Card.Content>
+  </Card.Root>
 
 </div>

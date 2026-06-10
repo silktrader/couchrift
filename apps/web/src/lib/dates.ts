@@ -28,9 +28,38 @@ export function formatRelativeTime(timestamp: number): string {
   return rtf.format(Math.round(duration), 'years')
 }
 
+export function formatDistanceBetweenDates(start: Date, end: Date): string {
+  let duration = (end.getTime() - start.getTime()) / 1000
+
+  for (const { amount, unit } of DIVISIONS) {
+    if (Math.abs(duration) < amount)
+      return `${Math.round(duration)} ${unit}`
+    duration /= amount
+  }
+
+  // Unreachable, but satisfies TypeScript
+  return `${Math.round(duration)} years`
+}
+
 // Time duration, as 1h 23m
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes - (hours * 60)
   return `${hours}h ${remainingMinutes}m`
+}
+
+// Format timestamps as absolute dates of the kind: August 10, 2026
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-UK', {
+    weekday: 'long',
+    month:   'long',
+    day:     'numeric',
+    year:    'numeric'
+  }).format(date)
+}
+
+export function formatTime(date: Date): string {
+  return `${
+    String(date.getHours()).padStart(2, '0')
+  }:${String(date.getMinutes()).padStart(2, '0')}`
 }

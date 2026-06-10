@@ -13,13 +13,6 @@
 
   const ls = getLoungeContext()
   const us = getUserContext()
-  const gs = getGenreContext()
-
-  let excludedGenres = $derived(ls.lounge.settings.excludedGenres.map(String))
-  let settings = $derived(ls.lounge.settings)
-
-  // Calculate current year dynamically for open-ended limits
-  const currentYear = new Date().getFullYear()
 
   async function handleDelete() {
     const result = await deleteLounge(ls.lounge.id)
@@ -50,7 +43,7 @@
     </Card.Content>
   </Card.Root>
 
-  <LoungeFilters {settings}/>
+  <LoungeFilters settings={ls.lounge.settings}/>
 
   {#if us.user.id === ls.lounge.creatorId }
     <Card.Root class="w-full overflow-hidden">

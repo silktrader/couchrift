@@ -11,7 +11,7 @@
   // Calculate current year dynamically for open-ended limits
   const currentYear = new Date().getFullYear()
 
-  let excludedGenres = $derived(settings.excludedGenres.map(String))
+  let excludedGenres = $derived(settings.excludedGenres?.map(String) ?? [])
 
 </script>
 
@@ -61,7 +61,7 @@
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
       <span class="font-medium text-muted-foreground shrink-0">Excluded Genres</span>
-      <div class="flex flex-wrap gap-2 justify-end">
+      <div class="flex gap-2 md:flex-wrap md:justify-end">
         {#if excludedGenres.length > 0}
           {#each excludedGenres as genreId}
             <Badge variant="secondary" class="px-2 py-3 text-md capitalize line-through">
