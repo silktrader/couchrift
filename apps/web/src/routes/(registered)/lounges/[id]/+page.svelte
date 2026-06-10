@@ -56,23 +56,23 @@
     <Card.Content class="flex flex-col gap-8">
 
       {#each lounge.participants as participant (participant.id)}
-        <div class="grid grid-cols-4 items-center justify-items-end">
-          <Avatar.Root class="size-12 ring-1 justify-self-start">
+        <div class="grid grid-cols-4 items-center justify-items-start">
+          <Avatar.Root class="size-10 ring-1 justify-self-start">
             {#if participant.image}
               <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
             {/if}
             <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
           </Avatar.Root>
           <div class="flex gap-2 font-mono items-center">
-            <Film/>
+            <Film class="size-4"/>
             <span>{participant.liked + participant.disliked}</span>
           </div>
           <div class="flex gap-2 font-mono items-center">
-            <ThumbsUp/>
+            <ThumbsUp class="size-4"/>
             <span>{participant.liked}</span>
           </div>
           <div class="flex gap-2 font-mono items-center">
-            <ThumbsDown/>
+            <ThumbsDown class="size-4"/>
             <span>{participant.disliked}</span>
           </div>
         </div>
@@ -119,8 +119,8 @@
       <Card.Content class="flex flex-col gap-8">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span class="font-medium text-muted-foreground">Start</span>
-          <div class="grid grid-cols-2 items-center gap-6">
-            <span>{formatDate(startDate)}</span>
+          <div class="grid grid-cols-2 items-center gap-8">
+            <span class="whitespace-nowrap">{formatDate(startDate)}</span>
             <div class="flex items-center gap-1">
               <Hourglass class="size-4"/>
               <span>{formatTime(startDate)}</span>
@@ -130,8 +130,8 @@
 
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span class="font-medium text-muted-foreground">End</span>
-          <div class="grid grid-cols-2 items-center gap-6">
-            <span>{formatDate(endDate)}</span>
+          <div class="grid grid-cols-2 items-center gap-8">
+            <span class="whitespace-nowrap">{formatDate(endDate)}</span>
             <div class="flex items-center gap-1">
               <Hourglass class="size-4"/>
               <span>{formatTime(endDate)}</span>
@@ -154,7 +154,7 @@
         Match
       </Card.Title>
       <Card.Description>
-        The film everybody agreed on.
+        The film everybody agreed to watch.
       </Card.Description>
     </Card.Header>
 
