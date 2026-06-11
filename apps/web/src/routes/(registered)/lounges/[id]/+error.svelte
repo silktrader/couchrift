@@ -1,14 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state'
-  import { browser } from '$app/environment'
   import { ChevronRight, ArrowLeft } from '@lucide/svelte'
-  import { Button } from '$lib/components/ui/button'
   import * as Item from '$lib/components/ui/item/index.js'
   import SubpageHeader from '$lib/components/layout/subpage-header/subpage-header.svelte'
-
-  function goBack() {
-    if (browser) window.history.back()
-  }
 
   let errorMessage = $derived.by(() => {
     switch (page?.error?.type) {

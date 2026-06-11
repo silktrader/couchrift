@@ -7,5 +7,4 @@ export const load = async ({ params }) => {
 
   if (data) return data
   svelteError(error.status, { message: '', type: error.value.type })
-
 }

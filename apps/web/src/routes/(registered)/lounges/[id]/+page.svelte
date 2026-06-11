@@ -7,11 +7,14 @@
   import * as Card from '$lib/components/ui/card'
   import * as Drawer from '$lib/components/ui/drawer'
   import LoungeFilters from '$lib/components/settings/lounge-filters/lounge-filters.svelte'
+  import LoungeDeletePrompt from '$lib/components/settings/lounge-delete-prompt/lounge-delete-prompt.svelte'
   import { browser } from '$app/environment'
   import { FilmCard } from '$lib/components/films/film-card'
-  import { Badge } from '$lib/components/ui/badge'
+  import { getUserContext } from '$lib/userService.svelte'
 
-  let { data }: PageProps = $props()
+  let { data, params }: PageProps = $props()
+
+  let us = getUserContext()
 
   // Under the current model only one match is allowed per lounge
   const lounge = $derived(data.lounge)
@@ -179,5 +182,9 @@
 
     </Card.Content>
   </Card.Root>
+
+  {#if us.user.id === lounge.creatorId }
+    <LoungeDeletePrompt loungeId={params.id}/>
+  {/if}
 
 </div>

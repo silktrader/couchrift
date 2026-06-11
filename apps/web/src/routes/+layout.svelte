@@ -17,11 +17,12 @@
         md:outline-1
         md:max-w-lg
         md:min-h-[60vh]
+        md:max-h-[70vh]
         md:rounded-3xl
         md:border-2
       md:border-neutral-900
       gap-6
-      overflow-hidden
+      overflow-y-auto
     "
   >
     {@render children()}
