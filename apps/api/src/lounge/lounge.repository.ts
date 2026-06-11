@@ -44,13 +44,11 @@ export function deleteLounge(loungeId: string, requesterId: string) {
 
     if (!lounge) return fail('LOUNGE_MISSING')
     if (lounge.creatorId !== requesterId) return fail('NOT_CREATOR')
-    if (lounge.endedAt !== null) return fail('LOUNGE_ENDED')
 
     const deleted = db.query(`
         DELETE
         FROM lounges
         WHERE id = @loungeId
-          AND endedAt IS NULL
           AND creatorId = @requesterId
     `).run({ loungeId, requesterId })
 
