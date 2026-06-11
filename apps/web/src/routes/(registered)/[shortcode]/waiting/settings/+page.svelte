@@ -5,10 +5,9 @@
   import { Slider } from '$lib/components/ui/slider'
   import * as ToggleGroup from '$lib/components/ui/toggle-group'
   import SubpageHeader from '$lib/components/layout/subpage-header/subpage-header.svelte'
-  import type { PageProps } from './$types'
   import { filmConfig } from '@couchrift/shared/config/film.ts'
   import { toast } from 'svelte-sonner'
-  import { goto } from '\$app/navigation'
+  import { goto } from '$app/navigation'
   import { getGenreContext } from '$lib/genreService.svelte.js'
 
   const ls = getLoungeContext()
@@ -24,11 +23,16 @@
   const maxRuntime = filmConfig.runtime.max
   let runtime = $state([ls.lounge.settings.minRuntime, ls.lounge.settings.maxRuntime])
 
+  // Prevents concurrent submissions
+  let saving = $state(false)
+
   function resetGenres() {
     excludedGenres = []
   }
 
   async function saveAndExit() {
+
+    if (saving) return
 
     // Gather new settings
     const newSettings = {
@@ -39,6 +43,21 @@
       excludedGenres: excludedGenres.map(Number)
     }
 
+    // Check if settings actually changed
+    const hasChanges =
+            ls.lounge.settings.minRuntime !== newSettings.minRuntime ||
+            ls.lounge.settings.maxRuntime !== newSettings.maxRuntime ||
+            ls.lounge.settings.minReleaseYear !== newSettings.minReleaseYear ||
+            ls.lounge.settings.maxReleaseYear !== newSettings.maxReleaseYear ||
+            ls.lounge.settings.excludedGenres.length !== newSettings.excludedGenres.length ||
+            !ls.lounge.settings.excludedGenres.every(genre => newSettings.excludedGenres.includes(genre))
+
+    if (!hasChanges) {
+      await goto(`/${ls.lounge.shortcode}/waiting`)
+      return
+    }
+
+    saving = true
     const result = await updateSettings(ls.lounge.id, newSettings)
     if (result.ok) {
       toast.success('Settings updated.')
@@ -46,6 +65,7 @@
     } else {
       toast.error(result.error)
     }
+    saving = false
   }
 
 </script>
@@ -72,7 +92,9 @@
   <section class="flex flex-col w-full gap-8 p-4">
     <div class="flex gap-4 text-muted-foreground items-center">
       <h3 class="[font-variant:small-caps] font-semibold">Runtime</h3>
-      <Badge class="p-2 text-sm">{runtime[0]} - {runtime[1] === 180 ? '180+' : runtime[1]} min.</Badge>
+      <Badge class="p-2 text-sm">
+        {runtime[0]} - {runtime[1] === maxRuntime ? `${maxRuntime}+` : runtime[1]} min.
+      </Badge>
     </div>
     <div class="w-full">
       <Slider type="multiple"
