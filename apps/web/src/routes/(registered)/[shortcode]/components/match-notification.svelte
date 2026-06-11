@@ -6,6 +6,7 @@
   import { Button, buttonVariants } from '$lib/components/ui/button'
   import { getLoungeContext } from '$lib/loungeService.svelte'
   import { FilmCard } from '$lib/components/films/film-card'
+  import AvatarsList from '$lib/components/layout/avatars-list/avatars-list.svelte'
 
   const ls = getLoungeContext()
 
@@ -65,14 +66,7 @@
       <div transition:fly={{ x: -40, duration: 600, delay: 300, easing: cubicOut }}
            class="flex justify-center -space-x-2 *:data-[slot=avatar]:ring-1 *:data-[slot=avatar]:ring-white items-center">
 
-        {#each participants as participant (participant.id)}
-          <Avatar.Root class="size-12">
-            {#if participant.image}
-              <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
-            {/if}
-            <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
-          </Avatar.Root>
-        {/each}
+        <AvatarsList users={participants}/>
 
       </div>
 

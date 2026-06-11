@@ -1,44 +1,55 @@
 <script lang="ts">
   import type { PageProps } from './$types'
   import { Button } from '$lib/components/ui/button'
-  import * as Avatar from '$lib/components/ui/avatar'
   import * as Item from '$lib/components/ui/item'
   import * as InputOTP from '$lib/components/ui/input-otp'
   import * as UnderlineTabs from '$lib/components/ui/underline-tabs'
   import { FieldSeparator } from '$lib/components/ui/field'
   import { ThumbsUp, ThumbsDown, Bookmark, UserRound, CircleAlert, X, ClipboardPaste } from '@lucide/svelte'
-  import { goto } from '\$app/navigation'
+  import { goto } from '$app/navigation'
   import { getUserContext } from '$lib/userService.svelte.js'
-  import { createLounge, leaveLounge, defaultSettings } from '$lib/loungeService.svelte.js'
+  import { createLounge, defaultSettings } from '$lib/loungeService.svelte.js'
   import { flip } from 'svelte/animate'
   import { formatRelativeTime } from '$lib/dates'
-  import { untrack } from 'svelte'
   import { ID_LENGTH } from '@couchrift/shared/config/ids'
   import { REGEXP_ONLY_DIGITS_AND_CHARS } from 'bits-ui'
   import { client } from '$lib/et-api'
   import AppHeader from '$lib/components/layout/app-header.svelte'
+  import AvatarsList from '$lib/components/layout/avatars-list/avatars-list.svelte'
   import { Badge } from '$lib/components/ui/badge'
+
+  type Participant = { id: string; image: string; name: string }
 
   let { data }: PageProps = $props()
 
   const us = getUserContext()
-  let activeLounges = $state(untrack(() => data.lounges.active))
-  let endedLounges = $state(untrack(() => data.lounges.ended))
+
+  // tk these need to be updated from WS events and turned into state
+  let activeLounges = $derived(data.lounges.active)
+  let endedLounges = $derived(data.lounges.ended)
 
   let shortcode = $state('')
   let shortcodeError = $state('')
 
+  let joining = $state(false)
+  let creating = $state(false)
+
   async function handleCreateLounge() {
+    if (creating) return
+    creating = true
     const result = await createLounge(defaultSettings)
     if (result.ok) {
-      await goto(`${result.data.shortcode}/waiting`)
+      await goto(`/${result.data.shortcode}/waiting`)
     } else {
       // tk display error
       console.error(result.error)
     }
+    creating = false
   }
 
   async function handleJoinLounge() {
+    if (joining) return
+    joining = true
     const { data, error } = await client.api.lounges.waiting({ shortcode }).participants.post()
 
     if (data) {
@@ -59,6 +70,7 @@
       default:
         shortcodeError = 'Unknown error occurred.'
     }
+    joining = false
   }
 
   async function handleGotoLounge(lounge: { shortcode: string, startedAt: number | null }) {
@@ -81,7 +93,22 @@
     }
   }
 
+  function handleWindowPaste(event: ClipboardEvent) {
+    const text = event.clipboardData?.getData('text') ?? ''
+
+    shortcode = text
+      .trim()
+      .slice(0, ID_LENGTH.shortcode)
+      .toUpperCase()
+
+    if (shortcode.length === ID_LENGTH.shortcode) {
+      void handleJoinLounge()
+    }
+  }
+
 </script>
+
+<svelte:window onpaste={handleWindowPaste}/>
 
 <AppHeader user={us.user}/>
 
@@ -141,7 +168,7 @@
   {/if}
 
   <FieldSeparator>or</FieldSeparator>
-  <Button variant="default" onclick={async () => await handleCreateLounge()}>Create Lounge</Button>
+  <Button variant="default" onclick={handleCreateLounge} disabled={creating}>Create Lounge</Button>
 </section>
 
 <!-- Active Lounges -->
@@ -160,18 +187,7 @@
           <div class="w-full" animate:flip>
             <Item.Root variant="outline" class="w-full" onclick={() => handleGotoLounge(lounge)}>
               <Item.Media>
-                <div class="flex -space-x-2 items-center">
-
-                  {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class="size-12 ring-1">
-                      {#if participant.image}
-                        <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
-                      {/if}
-                      <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
-                    </Avatar.Root>
-                  {/each}
-                </div>
-
+                <AvatarsList users={lounge.participants}/>
               </Item.Media>
 
               <!-- Status -->
@@ -201,16 +217,7 @@
           <div class="w-full" animate:flip>
             <Item.Root variant="outline" class="w-full" onclick={() => goto(`/lounges/${lounge.id}`)}>
               <Item.Media>
-                <div class="flex -space-x-2 items-center">
-                  {#each lounge.participants as participant (participant.id)}
-                    <Avatar.Root class="size-12 ring-1">
-                      {#if participant.image}
-                        <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
-                      {/if}
-                      <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
-                    </Avatar.Root>
-                  {/each}
-                </div>
+                <AvatarsList users={lounge.participants}/>
               </Item.Media>
 
               <Item.Content class="flex items-end">
@@ -235,31 +242,32 @@
 <footer class="flex w-full flex-col items-center justify-end gap-6 p-8 shrink-0">
   <div class="flex w-full justify-between gap-6">
     <div class="flex w-12 flex-col items-center gap-1">
-      <Button variant="outline" size="icon-lg">
+      <Button variant="outline" size="icon-lg" disabled>
         <ThumbsUp/>
       </Button>
       <span class="text-sm text-muted-foreground">Likes</span>
     </div>
 
     <div class="flex w-12 flex-col items-center gap-1">
-      <Button variant="outline" size="icon-lg">
+      <Button variant="outline" size="icon-lg" disabled>
         <ThumbsDown/>
       </Button>
       <span class="text-sm text-muted-foreground">Dislikes</span>
     </div>
 
     <div class="flex w-12 flex-col items-center gap-1">
-      <Button variant="outline" size="icon-lg">
+      <Button variant="outline" size="icon-lg" disabled>
         <Bookmark/>
       </Button>
       <span class="text-sm text-muted-foreground">Bookmarks</span>
     </div>
 
     <div class="flex w-12 flex-col items-center gap-1">
-      <Button variant="outline" size="icon-lg">
+      <Button variant="outline" size="icon-lg" disabled>
         <UserRound/>
       </Button>
       <span class="text-sm text-muted-foreground">Friends</span>
     </div>
   </div>
 </footer>
+

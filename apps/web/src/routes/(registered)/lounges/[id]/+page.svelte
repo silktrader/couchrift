@@ -10,7 +10,7 @@
   import LoungeDeletePrompt from '$lib/components/settings/lounge-delete-prompt/lounge-delete-prompt.svelte'
   import { FilmCard } from '$lib/components/films/film-card'
   import { getUserContext } from '$lib/userService.svelte'
-  import { goto } from '\$app/navigation'
+  import { goto } from '$app/navigation'
 
   let { data, params }: PageProps = $props()
 
