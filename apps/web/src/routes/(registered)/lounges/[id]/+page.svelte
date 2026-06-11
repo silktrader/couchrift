@@ -8,9 +8,9 @@
   import * as Drawer from '$lib/components/ui/drawer'
   import LoungeFilters from '$lib/components/settings/lounge-filters/lounge-filters.svelte'
   import LoungeDeletePrompt from '$lib/components/settings/lounge-delete-prompt/lounge-delete-prompt.svelte'
-  import { browser } from '$app/environment'
   import { FilmCard } from '$lib/components/films/film-card'
   import { getUserContext } from '$lib/userService.svelte'
+  import { goto } from '\$app/navigation'
 
   let { data, params }: PageProps = $props()
 
@@ -23,8 +23,8 @@
   const startDate = $derived(new Date(lounge.startedAt))
   const endDate = $derived(new Date(match.matchedAt))
 
-  function goBack() {
-    if (browser) window.history.back()
+  async function goBack() {
+    await goto('/home')
   }
 </script>
 
@@ -169,7 +169,7 @@
         <span class="text-sm text-muted-foreground">{match.year}</span>
       </div>
 
-      <span class="text-sm italic">{match.overview}</span>
+      <span class="text-sm italic line-clamp-4">{match.overview}</span>
 
       <Drawer.Root>
         <Drawer.Trigger class={buttonVariants({ variant: "default" })}>

@@ -19,7 +19,7 @@
   }
 
 </script>
-<Card.Root class="w-full border-destructive/50 bg-destructive/5">
+<Card.Root class="w-full ring-destructive/15 bg-destructive/5">
   <Card.Header>
     <Card.Title class="text-destructive">Deletion</Card.Title>
     <Card.Description>Close and delete the lounge along with swipes and matches.</Card.Description>

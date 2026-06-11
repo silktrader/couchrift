@@ -14,10 +14,10 @@
 
 </script>
 
-<div class="relative flex flex-col flex-1 justify-between items-center">
+<div class="relative flex flex-col flex-1 min-h-0 w-full justify-between items-center">
 
   <!-- Background -->
-  <div class="absolute inset-0 -z-10">
+  <div class="absolute inset-0 -z-10 overflow-hidden">
     <img
         src={`https://image.tmdb.org/t/p/original/${match.backdrop}`}
         alt="Backdrop"
@@ -88,13 +88,13 @@
   </div>
 
   <!-- Poster -->
-  <div class="relative z-10 flex flex-col h-full justify-center items-center">
+  <div class="relative z-10 flex flex-col flex-1 min-h-0 w-full justify-center items-center">
     <div transition:scale={{
             start: 0.6,
             duration: 450,
             easing: quintOut
           }}
-         class="flex flex-col items-center justify-center"
+         class="flex flex-col items-center justify-center h-full min-h-0 w-full"
     >
 
       <img
