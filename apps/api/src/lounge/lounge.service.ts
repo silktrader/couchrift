@@ -5,39 +5,40 @@ import {
   insertSwipe,
   getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges, setLoungeSettings, getUserSwipes
 } from './lounge.repository'
-import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse, LoungeSettings } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import type { AddSwipeData } from './lounge.models.ts'
 import { getFilmDetails } from '../film/film.repository.ts'
 import { broadcastLoungeMatch } from './lounge.ws.ts'
-import db from '../db'
 import { notifyUserSwipe } from './user-ws.controller.ts'
 
-export type CreateLoungeResult = { ok: true; shortcode: Shortcode } | { ok: false; error: 'DB_ERROR' }
+const MAX_CREATE_LOUNGE_TRIES = 5
 
-export function createLounge(userId: string, settings: LoungeSettings):
-  CreateLoungeResult {
+export function createLounge(userId: string, settings: LoungeSettings) {
 
-  // Generate an ID and timestamp
-  const loungeData = {
-    id:        createLoungeId(),
-    createdAt: Date.now(),
-    creatorId: userId,
-    settings:  settings,
-    shortcode: createShortcode()
-  }
+  // Attempt to create a new lounge by generating shortcodes and IDs
+  for (let attempt = 0; attempt < MAX_CREATE_LOUNGE_TRIES; attempt++) {
 
-  try {
-    addLounge(loungeData)
-    return {
-      ok:        true,
-      shortcode: loungeData.shortcode
+    // Generate an ID and timestamp
+    const data = {
+      id:        createLoungeId(),
+      createdAt: Date.now(),
+      creatorId: userId,
+      settings:  settings,
+      shortcode: createShortcode()
     }
-  } catch (error) {
-    console.error('Lounge creation failed: ', error)
-    return { ok: false, error: 'DB_ERROR' }
+
+    const result = addLounge(data)
+    if (result.ok)
+      return succeed(data.shortcode)
+
+    if (result.error === 'SHORTCODE_CONFLICT')
+      continue
+
+    return fail(result.error)
   }
+
+  return fail('DB_ERROR')
 }
 
 export function updateLoungeSettings(userId: string, loungeId: string, settings: LoungeSettings) {

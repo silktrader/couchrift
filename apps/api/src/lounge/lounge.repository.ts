@@ -1,30 +1,34 @@
 import db from '../db'
 import type { AddLoungeData } from './lounge.models'
-import { type LoungeResponse, type LoungeSettings, parseLoungeSettings } from '@couchrift/shared/schemas/lounge'
+import { type LoungeSettings, parseLoungeSettings } from '@couchrift/shared/schemas/lounge'
 import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
 import type { TmdbFilm, FilmPerson } from '@couchrift/shared/schemas/tmdbFilm.ts'
 import type { TmdbFilmRow } from '../film/film.models.ts'
-import type { Swipe } from '@couchrift/shared/schemas/swipes.ts'
+import { SQLiteError } from 'bun:sqlite'
 
+// Create a new lounge entry and add the first participant in a single immediate transaction.
 export function addLounge(data: AddLoungeData) {
-  const tx = db.transaction(() => {
-    const insertLounge = db.query(`
-        INSERT INTO lounges (id, creatorId, createdAt, shortcode, settings)
-        VALUES (@id, @creatorId, @createdAt, @shortcode, @settings)
-    `).run({ ...data, settings: JSON.stringify(data.settings) })
+  try {
+    db.transaction(() => {
+      db.query(`
+          INSERT INTO lounges (id, creatorId, createdAt, shortcode, settings)
+          VALUES (@id, @creatorId, @createdAt, @shortcode, @settings)
+      `).run({ ...data, settings: JSON.stringify(data.settings) })
 
-    if (insertLounge.changes !== 1) throw new Error('Lounge insertion failed')
+      db.query(`
+          INSERT INTO lounge_participants (loungeId, participantId)
+          VALUES (@loungeId, @creatorId)
+      `).run({ loungeId: data.id, creatorId: data.creatorId })
 
-    const insertParticipant = db.query(`
-        INSERT INTO lounge_participants (loungeId, participantId)
-        VALUES (@loungeId, @creatorId)
-    `).run({ loungeId: data.id, creatorId: data.creatorId })
-
-    if (insertParticipant.changes !== 1) throw new Error('Participant insertion failed')
-  })
-
-  tx()
+    }).immediate()
+    return succeed()
+  } catch (e) {
+    // Handle special error from unlikely shortcode conflict
+    if (e instanceof SQLiteError && e.code === 'SQLITE_CONSTRAINT_UNIQUE' && e.message.includes('shortcode'))
+      return fail('SHORTCODE_CONFLICT')
+    return fail('DB_ERROR')
+  }
 }
 
 export function setLoungeSettings(loungeId: string, settings: LoungeSettings) {

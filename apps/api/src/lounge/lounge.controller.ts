@@ -19,13 +19,9 @@ export const loungeController = new Elysia()
   .post('/api/lounges', async ({ user, body, status }) => {
 
     const result = createLounge(user.id, body.settings)
-    if (result.ok) return { shortcode: result.shortcode }
+    if (result.ok) return { shortcode: result.data }
+    return status(500, { message: 'Failed to create lounge' })
 
-    if (result.error === 'DB_ERROR') {
-      return status(500, { message: 'Failed to create lounge' })
-    } else {
-      return status(500, { message: 'Unknown error' })
-    }
   }, {
     auth: true,
     body: LoungeCreateSchema

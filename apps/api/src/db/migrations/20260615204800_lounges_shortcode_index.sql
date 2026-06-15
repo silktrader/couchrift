@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX idx_lounges_shortcode ON lounges (shortcode) WHERE endedAt IS NULL;
