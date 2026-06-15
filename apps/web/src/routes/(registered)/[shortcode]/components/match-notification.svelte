@@ -117,7 +117,8 @@
         <FilmCard film={match}/>
       </Drawer.Content>
     </Drawer.Root>
-    <Button size="lg" variant="secondary" href={`/lounges/${ls.lounge.id}`}>Review Process</Button>
+    <Button size="lg" variant="secondary" href={`/lounges/${ls.lounge.id}`}>Review Session</Button>
+    <Button size="lg" variant="secondary" href="/home">View Dashboard</Button>
   </div>
 </div>
 
