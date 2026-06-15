@@ -10,6 +10,7 @@ import { fail, succeed } from '@couchrift/shared/utilities'
 import type { LoungeParticipant } from '@couchrift/shared/schemas/primitives.ts'
 import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
 import { filmConfig } from '@couchrift/shared/config/film.ts'
+import type { Swipe } from '@couchrift/shared/schemas/swipes.ts'
 
 type LoungeEventMap = { [E in WsLoungeEvent as E['type']]: E }
 
@@ -214,8 +215,6 @@ export async function deleteLounge(loungeId: string) {
   switch (error.value.type) {
     case 'NOT_CREATOR':
       return fail('Only lounge creators can delete lounges.')
-    case 'LOUNGE_ENDED':
-      return fail('You can\'t delete a lounge that has ended.')
     default:
       return fail(COMMON_MESSAGES[error.value.type])
   }

@@ -9,9 +9,12 @@
   import { FilmCard } from '$lib/components/films/film-card'
   import { toast } from 'svelte-sonner'
   import SwipeCard from './components/swipe-card.svelte'
+  import SwipeHistory from './components/swipe-history.svelte'
   import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
+  import { getUserContext } from '$lib/userService.svelte'
 
   const ls = getLoungeContext()
+  const us = getUserContext()
 
   let tab: 'deck' | 'history' | 'users' = $state('deck')
   let openFilmDetails = $state(false)
@@ -55,11 +58,22 @@
     if (ls.lounge.startedAt && !ls.lounge.endedAt && ls.films.length < 5) fetchMoreFilms()
   })
 
+  $effect(() => {
+    return us.onEvent((event) => {
+      switch (event.type) {
+        case 'swipe':
+          const { like, swipedAt } = event.data
+          const { id, title, year } = event.data.film
+          ls.lounge.swipes.push({ id, title, year, like, swipedAt })
+      }
+    })
+  })
+
   const film = $derived(ls.films.at(0)!)
 
 </script>
 
-<div class="flex h-full w-full flex-1 flex-col p-4">
+<div class="flex w-full flex-1 min-h-0 flex-col p-4">
 
   <div class="relative w-full">
     <Button variant="ghost" size="icon-lg" class="absolute left-2 min-h-14" href="/home">
@@ -72,7 +86,7 @@
     </Button>
   </div>
 
-  <Tabs.Root value={tab} class="gap-4 w-full h-full flex-1 min-w-0 min-h-0">
+  <Tabs.Root value={tab} class="gap-4 w-full flex-1 min-w-0 min-h-0">
     <Tabs.List class="grid mx-auto min-h-14 grid-cols-3 bg-muted/50 rounded-full z-0">
       <Tabs.Trigger class="w-16 group rounded-full z-0" value="deck">
         <GalleryHorizontalEnd class="size-5 z-0 fill-none transition-all group-data-[state=active]:fill-foreground"/>
@@ -128,8 +142,14 @@
     </Tabs.Content>
 
     <Tabs.Content value="history"
-                  class="flex flex-col h-full w-full justify-center items-center">
-      <h2 class="text-2xl font-semibold content-center">Swipes</h2>
+                  class="flex flex-col flex-1 w-full min-w-0 min-h-0 items-center">
+      {#if ls.lounge.swipes.length > 0}
+        <h2 class="text-xl font-semibold content-center py-4">Your Swipes
+          <span class="text-sm">({ls.lounge.swipes.length})</span></h2>
+        <SwipeHistory swipes={ls.lounge.swipes}/>
+      {:else}
+        <h2 class="text-xl font-semibold content-center">No Swipes Yet</h2>
+      {/if}
     </Tabs.Content>
 
     <Tabs.Content value="users"

@@ -17,6 +17,11 @@
   $effect(() => {
     gs.load()
   })
+
+  // Clean up web socket connections on navigating away
+  $effect(() => {
+    return () => us.destroy()
+  })
 </script>
 
 {#if isPending}

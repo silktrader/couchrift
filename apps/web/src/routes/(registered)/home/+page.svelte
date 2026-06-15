@@ -18,8 +18,6 @@
   import AvatarsList from '$lib/components/layout/avatars-list/avatars-list.svelte'
   import { Badge } from '$lib/components/ui/badge'
 
-  type Participant = { id: string; image: string; name: string }
-
   let { data }: PageProps = $props()
 
   const us = getUserContext()

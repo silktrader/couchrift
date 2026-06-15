@@ -9,6 +9,7 @@ import { loungeController } from './lounge/lounge.controller'
 import { loungeWsController } from './lounge/lounge.ws'
 import { startTmdbIngestion } from './film/tmdb-ingestion.ts'
 import { filmController } from './film/film.controller.ts'
+import { userWsController } from './lounge/user-ws.controller.ts'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -37,6 +38,7 @@ const app = new Elysia()
   .use(filmController)
   .use(loungeController)
   .use(loungeWsController)
+  .use(userWsController)
   .listen({ port: 3000 })
 
 console.log(`[INIT] 🔵 Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'prod' : 'dev'})`)

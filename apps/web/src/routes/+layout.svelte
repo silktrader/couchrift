@@ -7,13 +7,13 @@
 
 <Toaster position="top-center" richColors/>
 
-<div class="min-h-svh w-full md:flex md:justify-center md:pt-[15vh] md:pb-[15vh]">
+<div class="h-svh w-full md:flex md:justify-center md:pt-[15vh] md:pb-[15vh]">
   <main
       class="
         flex
         flex-col
         w-full
-        min-h-svh
+        h-svh
         md:outline-1
         md:max-w-lg
         md:min-h-[60vh]
@@ -22,7 +22,7 @@
         md:border-2
       md:border-neutral-900
       gap-6
-      overflow-y-auto
+      overflow-hidden
     "
   >
     {@render children()}
