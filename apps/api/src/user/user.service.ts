@@ -1,4 +1,3 @@
-import sharp from 'sharp'
 import { createImageUrl } from '../lib/id'
 import path from 'node:path'
 import { unlink } from 'node:fs/promises'
@@ -60,10 +59,10 @@ async function convertAvatar(file: File):
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const webpBuffer = await sharp(buffer)
+    const webpBuffer = await new Bun.Image(buffer)
       .resize(AVATAR_CONFIG.maxDimension, AVATAR_CONFIG.maxDimension, {
-        fit:      'cover', // Crop to square
-        position: 'center'
+        fit:                'fill',
+        withoutEnlargement: true
       })
       .webp({ quality: AVATAR_CONFIG.webpQuality })
       .toBuffer()
