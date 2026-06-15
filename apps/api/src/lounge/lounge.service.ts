@@ -3,7 +3,7 @@ import {
   addLounge, getActiveLoungeByCode, findActiveUserLounges, deleteLoungeParticipant, upsertLoungeParticipant,
   selectLoungeParticipant, deleteLounge, setLoungeStartWithInitialFilms, selectUnswipedFilms, getLoungeData,
   insertSwipe,
-  getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges, setLoungeSettings
+  getEndedLounge, getLoungeParticipants, getEndedLoungeMatches, getUserEndedLounges, setLoungeSettings, getUserSwipes
 } from './lounge.repository'
 import type { Shortcode } from '@couchrift/shared/schemas/primitives'
 import type { LoungeResponse, LoungeSettings } from '@couchrift/shared/schemas/lounge'
@@ -12,6 +12,7 @@ import type { AddSwipeData } from './lounge.models.ts'
 import { getFilmDetails } from '../film/film.repository.ts'
 import { broadcastLoungeMatch } from './lounge.ws.ts'
 import db from '../db'
+import { notifyUserSwipe } from './user-ws.controller.ts'
 
 export type CreateLoungeResult = { ok: true; shortcode: Shortcode } | { ok: false; error: 'DB_ERROR' }
 
@@ -57,10 +58,15 @@ export function removeLounge(loungeId: string, requesterId: string) {
 }
 
 export function getActiveLoungeByCodeAndUser(shortcode: string, userId: string) {
+  // Fetch lounge data
   const lounge = getActiveLoungeByCode(shortcode)
   if (!lounge) return fail('LOUNGE_MISSING')
   if (!lounge.participants.find(participant => participant.id === userId)) return fail('FORBIDDEN_ACCESS')
-  return succeed(lounge)
+
+  // Fetch user swipes
+  const swipes = getUserSwipes(lounge.id, userId)
+
+  return succeed({ ...lounge, swipes })
 }
 
 // Get active lounges the user has joined or created.
@@ -68,7 +74,7 @@ export function getUserActiveLoungesWithDetails(userId: string) {
   const rows = findActiveUserLounges(userId)
 
   // Expect only a handful of lounges, avoid hashsets
-  const lounges: LoungeResponse[] = []
+  const lounges: Omit<LoungeResponse, 'swipes'>[] = []
 
   // Rows are sorted according to lounge creation date
   for (const row of rows) {
@@ -141,17 +147,18 @@ export function getUnswipedFilms(loungeId: string, userId: string) {
 export function saveSwipe(data: AddSwipeData) {
 
   // Insert the swipe or fail
-  const result = insertSwipe(data)
+  const swipedAt = Date.now()
+  const result = insertSwipe({ ...data, swipedAt })
   if (!result.ok) return fail(result.error)
 
+  // Notify relevant users
+  const film = getFilmDetails(data.filmId)
+  if (!film) throw new Error('[EXC] Match detected but film not found.')
+
+  notifyUserSwipe(data.userId, data.loungeId, swipedAt, data.like, film)
+
   // Check whether the swipe triggers a match and fetch details
-  if (result.data.match) {
-    const film = getFilmDetails(data.filmId)
-    // possible path when swipes outlive the films they reference
-    // TODO: add DB constraint
-    if (!film) throw new Error('[EXC] Match detected but film not found.')
-    broadcastLoungeMatch(data.loungeId, film)
-  }
+  if (result.data.match) broadcastLoungeMatch(data.loungeId, film)
 
   return succeed()
 }

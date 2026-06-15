@@ -1,4 +1,4 @@
-import type { LoungeParticipant } from './primitives.ts'
+import type { LoungeParticipant, FilmId } from './primitives.ts'
 import type { TmdbFilm } from './tmdbFilm.ts'
 import type { LoungeSettings } from './lounge.ts'
 

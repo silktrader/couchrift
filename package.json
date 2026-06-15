@@ -4,19 +4,19 @@
   "type": "module",
   "private": true,
   "workspaces": [
-	"apps/*",
-	"packages/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-	"dev": "bun run dev.ts",
-	"build": "bun run --filter @couchrift/web build",
-	"start": "NODE_ENV=production bun run build && NODE_ENV=production bun run --filter @couchrift/api start"
+    "dev": "bun run dev.ts",
+    "build": "bun run --filter @couchrift/web build",
+    "start": "NODE_ENV=production bun run build && NODE_ENV=production bun run --filter @couchrift/api start"
   },
   "devDependencies": {
-	"@sinclair/typebox": "^0.34.49",
-	"@types/bun": "latest"
+    "@sinclair/typebox": "^0.34.49",
+    "@types/bun": "latest"
   },
   "peerDependencies": {
-	"typescript": "^6.0.0"
+    "typescript": "^6.0.3"
   }
 }

@@ -5,7 +5,7 @@ import {
   removeLoungeParticipant, removeLounge, startLounge, getUnswipedFilms, saveSwipe,
   getEndedLoungeWithDetails, getUserEndedLoungesWithDetails, updateLoungeSettings
 } from './lounge.service'
-import { LoungeCreateSchema, LoungeSettingsSchema } from '@couchrift/shared/schemas/lounge'
+import { LoungeCreateSchema, LoungeSettingsSchema, LoungeResponseSchema } from '@couchrift/shared/schemas/lounge'
 import {
   broadcastUserJoined, broadcastUserLeft, broadcastUserRemoved, broadcastLoungeRemoved, broadcastLoungeStarted,
   broadcastLoungeSettingsUpdate

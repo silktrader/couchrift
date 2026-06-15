@@ -5,6 +5,7 @@ import { fail, succeed } from '@couchrift/shared/utilities'
 import { runTransactionWithRollback } from '../db/transaction.ts'
 import type { TmdbFilm, FilmPerson } from '@couchrift/shared/schemas/tmdbFilm.ts'
 import type { TmdbFilmRow } from '../film/film.models.ts'
+import type { Swipe } from '@couchrift/shared/schemas/swipes.ts'
 
 export function addLounge(data: AddLoungeData) {
   const tx = db.transaction(() => {
@@ -355,9 +356,15 @@ export function selectUnswipedFilms(loungeId: string, userId: string, needed: nu
   }))
 }
 
-export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: number, like: boolean }) {
+export function insertSwipe(swipe: {
+  loungeId: string,
+  userId: string,
+  filmId: number,
+  like: boolean,
+  swipedAt: number
+}) {
 
-  const { loungeId, userId, filmId } = swipe
+  const { loungeId, userId, filmId, swipedAt } = swipe
 
   return runTransactionWithRollback(() => {
       // Run preliminary checks and count current film likes.
@@ -388,15 +395,12 @@ export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: n
       if (lounge.endedAt) return fail('LOUNGE_ENDED')
       if (!lounge.isParticipant) return fail('FORBIDDEN_SWIPE')
 
-      // Set a single timestamp for all operations
-      const now = Date.now()
-
       // Insert the swipe
       const { changes } = db.query(`
           INSERT INTO swipes (loungeId, userId, filmId, swipedAt, value)
           VALUES (@loungeId, @userId, @filmId, @swipedAt, @value)
           ON CONFLICT(loungeId, userId, filmId) DO NOTHING
-      `).run({ loungeId, userId, filmId, swipedAt: now, value: swipe.like ? 1 : -1 })
+      `).run({ loungeId, userId, filmId, swipedAt, value: swipe.like ? 1 : -1 })
 
       if (changes !== 1) return fail('ALREADY_SWIPED')
 
@@ -420,17 +424,30 @@ export function insertSwipe(swipe: { loungeId: string, userId: string, filmId: n
           UPDATE lounges
           SET endedAt = @endedAt
           WHERE id = @loungeId
-      `).run({ endedAt: now, loungeId })
+      `).run({ endedAt: swipedAt, loungeId })
       if (!updateLounge.changes) throw new Error('Lounge update failed') // defensive guard, should not reach
 
       const matchInsert = db.query(`
           INSERT INTO lounge_matches (loungeId, filmId, matchedAt)
           VALUES (@loungeId, @filmId, @matchedAt)
-      `).run({ loungeId, filmId, matchedAt: now })
+      `).run({ loungeId, filmId, matchedAt: swipedAt })
       if (!matchInsert.changes) throw new Error('Match insertion failed') // defensive guard, should not reach
       return succeed({ match: true, filmId })
     }
   )
+}
+
+export function getUserSwipes(loungeId: string, userId: string) {
+  return db.query<
+    { id: number, title: string, year: number, swipedAt: number, like: boolean },
+    { loungeId: string, userId: string }>(`
+      SELECT filmId as id, title, year, swipedAt, value = 1 AS like
+      FROM swipes
+               JOIN films ON films.id = filmId
+      WHERE userId = @userId
+        AND loungeId = @loungeId
+      ORDER BY swipedAt
+  `).all({ loungeId, userId })
 }
 
 export function getEndedLounge(loungeId: string) {

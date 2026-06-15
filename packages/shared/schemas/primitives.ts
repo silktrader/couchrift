@@ -40,3 +40,4 @@ export const LoungeParticipantSchema = Type.Object({
 export type LoungeParticipant = Static<typeof LoungeParticipantSchema>
 
 export const FilmIdSchema = Type.Integer({ minimum: 0 })
+export type FilmId = Static<typeof FilmIdSchema>

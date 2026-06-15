@@ -4,6 +4,7 @@ import {
 } from './primitives.ts'
 import { filmConfig } from '../config/film.ts'
 import { Value } from '@sinclair/typebox/value'
+import { SwipeSchema } from './swipes.ts'
 
 export const LoungeSettingsSchema = Type.Object({
   minRuntime:     Type.Integer({ minimum: filmConfig.runtime.min, maximum: filmConfig.runtime.max }),
@@ -50,7 +51,8 @@ export const LoungeResponseSchema = Type.Object({
   startedAt:    NullableTimestamp,
   shortcode:    ShortcodeSchema,
   settings:     LoungeSettingsSchema,
-  participants: Type.Array(LoungeParticipantSchema)
+  participants: Type.Array(LoungeParticipantSchema),
+  swipes:       Type.Array(SwipeSchema)
 })
 export type LoungeResponse = Static<typeof LoungeResponseSchema>
 
