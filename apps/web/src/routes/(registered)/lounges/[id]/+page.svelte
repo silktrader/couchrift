@@ -113,7 +113,7 @@
             </div>
             <div class="flex items-center gap-1">
               <Hourglass class="size-4 text-muted-foreground"/>
-              <span class="text-muted-foreground">1 min.</span>
+              <span class="text-muted-foreground">{formatDistanceBetweenDates(startDate, endDate)}</span>
             </div>
           </div>
         </div>
