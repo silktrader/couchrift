@@ -148,7 +148,7 @@ async function fetchRandomPage() {
   // Build the URL with random parameters
   const url = new URL(`${TMDB.BASE_URL}/discover/movie`)
   url.searchParams.set('sort_by', 'vote_count.desc')
-  url.searchParams.set('vote_count.gte', '30')    // tk export
+  url.searchParams.set('vote_count.gte', '10')    // tk export
   url.searchParams.set('with_runtime.gte', '60') // tk export
   url.searchParams.set('page', String(pageNumber))
 
