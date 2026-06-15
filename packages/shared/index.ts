@@ -1,4 +1,4 @@
-import '../../apps/web/src/lib/typebox'
+import './schemas/typebox.ts'
 
 export * from './config/auth'
 export * from './schemas/auth'
