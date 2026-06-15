@@ -14,7 +14,13 @@ export const auth = betterAuth({
     minPasswordLength: AUTH_PWD.MIN,
     maxPasswordLength: AUTH_PWD.MAX
   },
-  advanced:         {
+  // When requests hit the backend, BetterAuth can verify session data
+  // from the incoming cookie token without hitting the database.
+  cookieCache: {
+    enabled: true,
+    maxAge:  5 * 60 // Cache duration in seconds
+  },
+  advanced:    {
     database: {
       generateId: (options) => {
         // Generate custom short user IDs with Nanoid
