@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Item from '$lib/components/ui/item'
-  import { Button } from '$lib/components/ui/button'
   import type { Swipe } from '@couchrift/shared/schemas/swipes.ts'
   import { Heart, X } from '@lucide/svelte/icons'
   import { formatRelativeTime } from '$lib/dates'
@@ -11,8 +10,8 @@
 
 </script>
 
-<ScrollArea class="h-full w-4/5">
-  <section class="flex flex-col gap-2 items-center">
+<ScrollArea class="h-full w-full">
+  <section class="flex flex-col w-full gap-2 items-center pr-4">
 
     {#each orderedSwipes as swipe (swipe.id)}
       <Item.Root variant="outline" size="sm">
@@ -26,8 +25,8 @@
         <Item.Content>
           <Item.Title>
             <span class="text-md line-clamp-1">{swipe.title}</span>
-            <span class="text-xl">·</span>
-            <span class="text- text-muted-foreground">{swipe.year}</span>
+            <!--             <span class="text-xl">·</span> -->
+            <!--             <span class="text- text-muted-foreground">{swipe.year}</span> -->
           </Item.Title>
           <!-- <Item.Description class="text-sm">{formatRelativeTime(swipe.swipedAt)}</Item.Description> -->
         </Item.Content>

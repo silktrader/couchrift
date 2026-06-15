@@ -10,6 +10,7 @@
   import { toast } from 'svelte-sonner'
   import SwipeCard from './components/swipe-card.svelte'
   import SwipeHistory from './components/swipe-history.svelte'
+  import UsersList from './components/users-list.svelte'
   import type { TmdbFilm } from '@couchrift/shared/schemas/tmdbFilm.ts'
   import { getUserContext } from '$lib/userService.svelte'
 
@@ -141,20 +142,22 @@
 
     </Tabs.Content>
 
-    <Tabs.Content value="history"
-                  class="flex flex-col flex-1 w-full min-w-0 min-h-0 items-center">
+    <Tabs.Content value="history" class="flex flex-col w-full min-h-0 p-8 mb-4">
       {#if ls.lounge.swipes.length > 0}
-        <h2 class="text-xl font-semibold content-center py-4">Your Swipes
-          <span class="text-sm">({ls.lounge.swipes.length})</span></h2>
+         <span class="text-md text-muted-foreground pb-6 w-full">
+           Showing <strong>{ls.lounge.swipes.length}</strong> swipes
+      </span>
         <SwipeHistory swipes={ls.lounge.swipes}/>
       {:else}
         <h2 class="text-xl font-semibold content-center">No Swipes Yet</h2>
       {/if}
     </Tabs.Content>
 
-    <Tabs.Content value="users"
-                  class="flex flex-col h-full w-full justify-center items-center">
-      <h2 class="text-2xl font-semibold content-center">Users</h2>
+    <Tabs.Content value="users" class="flex flex-col w-full min-h-0 p-8 mb-4">
+      <span class="text-md text-muted-foreground pb-6 w-full">
+        Showing <strong>{ls.lounge.participants.length}</strong> participants
+      </span>
+      <UsersList/>
     </Tabs.Content>
 
   </Tabs.Root>
