@@ -23,15 +23,29 @@ try {
 // Serve static files from the SvelteKit build directory.
 // Fallback when no route matches, so that SvelteKit router takes over.
 function withSpaFallback(app: Elysia) {
+  const assetsDir = process.env.STATIC_ASSETS_PATH || '../web/build'
+  const indexHtmlPath = path.resolve(assetsDir, 'index.html')
+
   return isProd
          ? app
-           .use(staticPlugin({ assets: '../web/build', prefix: '/' }))
-           .get('*', ({ path: requestPath, set }) => {
+           .use(staticPlugin({ assets: assetsDir, prefix: '/' }))
+           .get('*', async ({ path: requestPath, set }) => {
              if (requestPath.startsWith('/api/')) {
                set.status = 404
                return { error: 'Not Found', path: requestPath }
              }
-             return Bun.file(path.resolve('../web/build/index.html'))
+
+             const file = Bun.file(indexHtmlPath)
+
+             if (await file.exists()) {
+               console.log(`[SPA] 🟢 Serving SPA entrypoint for request: ${requestPath}`)
+               set.headers['content-type'] = 'text/html; charset=utf-8'
+               return await file.text()
+             } else {
+               console.error(`[SPA] ❌ SPA index.html not found at: ${indexHtmlPath} (CWD: ${process.cwd()})`)
+               set.status = 404
+               return 'SPA entrypoint not found. Please build the web application first.'
+             }
            })
          : app
 }

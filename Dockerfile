@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---------- 1. deps ----------
-FROM oven/bun:1.3.14-alpine AS deps
+FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 
 # Copy workspace manifests first to maximise layer caching
@@ -13,7 +13,7 @@ COPY packages/shared/package.json packages/shared/package.json
 RUN bun install --frozen-lockfile
 
 # ---------- 2. builder ----------
-FROM oven/bun:1.3.14-alpine AS builder
+FROM oven/bun:1.3.14 AS builder
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -26,28 +26,28 @@ COPY . .
 # Build the SvelteKit SPA (adapter-static -> apps/web/build)
 RUN bun run --filter @couchrift/web build
 
+# Compile the Elysia API server into a standalone binary
+WORKDIR /app/apps/api
+RUN bun build \
+  --compile \
+  --minify-whitespace \
+  --minify-syntax \
+  --outfile server \
+  src/index.ts
+
 # ---------- 3. runner ----------
-FROM oven/bun:1.3.14-alpine AS runner
+FROM gcr.io/distroless/base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Only tini for proper PID 1 signal handling
-RUN apk add --no-cache tini \
- && addgroup -S app && adduser -S app -G app
+# Copy the compiled standalone server binary
+COPY --from=builder /app/apps/api/server ./server
 
-# Copy only what the API needs at runtime
-COPY --from=builder /app/package.json     ./package.json
-COPY --from=builder /app/node_modules     ./node_modules
-COPY --from=builder /app/packages/shared  ./packages/shared
-COPY --from=builder /app/apps/api         ./apps/api
-COPY --from=builder /app/apps/web/build   ./apps/web/build
+# Copy the static SPA assets
+COPY --from=builder /app/apps/web/build ./web-build
 
-# Data directory (SQLite DB + avatars) — will be a mounted volume
-RUN mkdir -p /app/apps/api/data /app/apps/api/uploads/avatars \
- && chown -R app:app /app
-USER app
+# Set environment variable pointing to the static assets
+ENV STATIC_ASSETS_PATH=/app/web-build
 
-WORKDIR /app/apps/api
 EXPOSE 3000
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["bun", "run", "src/index.ts"]
+CMD ["./server"]
