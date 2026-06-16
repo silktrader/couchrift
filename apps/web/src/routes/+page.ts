@@ -1,8 +1,14 @@
 import { redirect } from '@sveltejs/kit'
 import { authClient } from '$lib/auth-client'
+import type { PageLoad } from './$types'
 
-// Redirect logged-in users to their home page.
-// This one serves as a landing page for unregistered users.
-const user = (await authClient.getSession()).data?.user
-if (user) throw redirect(302, '/home')
-throw redirect(303, '/sign-in')
+export const load: PageLoad = async () => {
+  const session = await authClient.getSession()
+
+  // Redirect registered users to their dashboard
+  if (session.data?.user)
+    throw redirect(302, '/home')
+
+  // Redirect unregistered ones to the sign-in page
+  throw redirect(303, '/sign-in')
+}
