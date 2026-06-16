@@ -37,7 +37,7 @@ function withSpaFallback(app: Elysia) {
 }
 
 const app = new Elysia()
-  .get('/health', ({ status }) => status(204))
+  .get('/api/health', ({ status }) => status(204))
   .use(staticPlugin({ assets: './uploads/avatars', prefix: '/uploads/avatars' }))
   .use(betterAuth)
   .use(userController)
