@@ -33,13 +33,13 @@ function withSpaFallback(app: Elysia) {
 const app = new Elysia()
   .get('/health', ({ status }) => status(204))
   .use(staticPlugin({ assets: './uploads/avatars', prefix: '/uploads/avatars' }))
-  .use(withSpaFallback)
   .use(betterAuth)
   .use(userController)
   .use(filmController)
   .use(loungeController)
   .use(loungeWsController)
   .use(userWsController)
+  .use(withSpaFallback) // Registered last as a catch-all fallback
   .listen({ port: 3000, hostname: '0.0.0.0' })
 
 console.log(`[INIT] 🔵 Server running at ${app.server?.hostname}:${app.server?.port} (${isProd ? 'prod' : 'dev'})`)
