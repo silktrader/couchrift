@@ -33,7 +33,11 @@ export const auth = betterAuth({
     }
   },
   // Add LAN devices to test auth
-  trustedOrigins: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.1.102:5173'],
-  secret:         process.env.BETTER_AUTH_SECRET,
-  baseURL:        process.env.BETTER_AUTH_URL
+  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? '')
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean),
+  // trustedOrigins: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.1.102:5173'],
+  secret:  process.env.BETTER_AUTH_SECRET,
+  baseURL: process.env.BETTER_AUTH_URL
 })
