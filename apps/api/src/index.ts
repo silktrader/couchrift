@@ -26,7 +26,13 @@ function withSpaFallback(app: Elysia) {
   return isProd
          ? app
            .use(staticPlugin({ assets: '../web/build', prefix: '/' }))
-           .get('*', () => Bun.file(path.resolve('../web/build/index.html')))
+           .get('*', ({ path: requestPath, set }) => {
+             if (requestPath.startsWith('/api/')) {
+               set.status = 404
+               return { error: 'Not Found', path: requestPath }
+             }
+             return Bun.file(path.resolve('../web/build/index.html'))
+           })
          : app
 }
 
