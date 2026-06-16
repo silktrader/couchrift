@@ -1,0 +1,30 @@
+services:
+  couchrift:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: couchrift:latest
+    container_name: couchrift
+    restart: unless-stopped
+    ports:
+      - "3005:3000"
+    environment:
+      NODE_ENV: production
+      # Path is *inside* the container; must match the mounted volume below
+      DB_PATH: /app/apps/api/data/couchrift.db
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      # Persist SQLite DB (+ WAL/SHM) and uploaded avatars
+    volumes:
+      - couchrift-data:/app/apps/api/data
+      - couchrift-uploads:/app/apps/api/uploads
+#    healthcheck:
+#      test: [ "CMD", "wget", "-qO-", "http://localhost:3000/api/health" ]
+#      interval: 30s
+#      timeout: 5s
+#      retries: 3
+
+volumes:
+  couchrift-data:
+  couchrift-uploads:
