@@ -97,7 +97,7 @@ async function ingestTmdbFilms() {
   const filteredFilms = pageResponse.data.results.filter((film: TmdbFilmDiscover) =>
     film.poster_path &&
     !film.adult &&
-    film.vote_average > 4)
+    film.vote_average > 3)
   console.log(`[TMDB] ✅ Fetched random page containing ${filteredFilms.length} films.`)
 
   // Shorten the list of films to fetch by removing the ones already present in the DB
@@ -106,7 +106,7 @@ async function ingestTmdbFilms() {
   const missingFilms = filteredFilms.filter(film => !existingIds.has(film.id))
 
   if (missingFilms.length === 0) {
-    console.log(`[TMDB] ⏩ No new films found on random page.`)
+    console.log(`[TMDB] ⏩ All valid films from this page are already present in the DB.`)
     return
   }
 
@@ -141,19 +141,28 @@ async function ingestTmdbFilms() {
   console.log(`[TMDB] ✅ Added ${addedFilms} new films.`)
 }
 
-// Return a random page filled with films according to randomly chosen and variable film parameters
+const SORT_OPTIONS = [
+  'vote_count.desc',
+  'popularity.desc',
+  'revenue.desc',
+  'primary_release_date.desc',
+  'vote_average.desc'
+] as const satisfies [string, ...string[]]
+
+// Return a random page filled with films according to randomly chosen, variable, film parameters.
 async function fetchRandomPage() {
-  const pageNumber = Math.min(Math.floor(Math.random() * (TMDB.MAX_PAGE - 1)), 1)
+  const pageNumber = Math.max(Math.floor(Math.random() * TMDB.MAX_PAGE), 1)
+  const sortBy = SORT_OPTIONS[Math.floor(Math.random() * SORT_OPTIONS.length)] ?? 'vote_count.desc'
 
   // Build the URL with random parameters
   const url = new URL(`${TMDB.BASE_URL}/discover/movie`)
-  url.searchParams.set('sort_by', 'vote_count.desc')
-  url.searchParams.set('vote_count.gte', '10')    // tk export
-  url.searchParams.set('with_runtime.gte', '60') // tk export
+  url.searchParams.set('sort_by', sortBy)
+  url.searchParams.set('vote_count.gte', '10')
+  url.searchParams.set('with_runtime.gte', String(filmConfig.runtime.min))
   url.searchParams.set('page', String(pageNumber))
 
   // Issue the request
-  return await safeFetch<TmdbDiscoverResponse>(url.toString(), {
+  return safeFetch<TmdbDiscoverResponse>(url.toString(), {
     headers: { Authorization: `Bearer ${TMDB.API_KEY}` },
     signal:  AbortSignal.timeout(10000)
   })
