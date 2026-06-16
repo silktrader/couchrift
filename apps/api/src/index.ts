@@ -20,20 +20,21 @@ try {
   console.error('[INIT] ❌ Failed to create upload directory:', error)
 }
 
+// Serve static files from the SvelteKit build directory.
+// Fallback when no route matches, so that SvelteKit router takes over.
+function withSpaFallback(app: Elysia) {
+  return isProd
+         ? app
+           .use(staticPlugin({ assets: '../web/build', prefix: '/' }))
+           .get('*', () => Bun.file(path.resolve('../web/build/index.html')))
+         : app
+}
+
 const app = new Elysia()
+  .get('/health', ({ status }) => status(204))
   .use(staticPlugin({ assets: './uploads/avatars', prefix: '/uploads/avatars' }))
-  .use((app) => {
-    if (isProd) {
-      // Serve static files from the SvelteKit build directory
-      // Fallback when no route matches, so that SvelteKit router takes over
-      return app.use(staticPlugin({ assets: '../web/build', prefix: '/' }))
-                .get('*', () => Bun.file(path.resolve('../web/build/index.html')))
-    }
-    return app
-  })
+  .use(withSpaFallback)
   .use(betterAuth)
-  .group('/api', (app) => app.get('/hello', () => ({ message: 'Hello from API' })))
-  // tk review grouping
   .use(userController)
   .use(filmController)
   .use(loungeController)
