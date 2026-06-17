@@ -1,14 +1,20 @@
 import { createImageUrl } from '../lib/id'
-import path from 'node:path'
 import { getUserAvatar, setUserAvatar } from './user.repository'
 import { fail, succeed } from '@couchrift/shared/utilities'
+import { mkdirSync } from 'node:fs'
+import { statSync } from 'node:fs'
 
 export const AVATAR_CONFIG = {
   maxSize:      2 * 1024 * 1024, // 2MB input limit
-  uploadDir:    Bun.env.UPLOAD_DIR ?? './uploads/avatars',
+  uploadDir:    `${Bun.env.UPLOAD_DIR}/avatars`,
   webpQuality:  90, // 0-100
   maxDimension: 512 // Max width and height in pixels
 } as const
+
+// Attempt to create the avatar directory when missing or fail
+mkdirSync(AVATAR_CONFIG.uploadDir, { recursive: true })
+if (!statSync(AVATAR_CONFIG.uploadDir))
+  throw new Error(`Upload directory missing: ${AVATAR_CONFIG.uploadDir}`)
 
 // Update the user's avatar with a new image from an uploaded file.
 export async function addAvatar(file: File, userId: string) {
@@ -19,7 +25,7 @@ export async function addAvatar(file: File, userId: string) {
 
   // Generate file name and path
   const fileName = `${createImageUrl()}.webp`
-  const filePath = getAvatarPath(fileName)
+  const filePath = `${AVATAR_CONFIG.uploadDir}/${fileName}`
 
   // Attempt to write the file
   try {
@@ -37,19 +43,15 @@ export async function addAvatar(file: File, userId: string) {
 
   // On failure to update the table, delete the created file
   if (!update) {
-    await Bun.file(filePath).delete()
+    await Bun.file(filePath).delete().catch(console.error)
     return fail('UPDATE_ERROR')
   }
 
   // On success delete the old image
   if (oldFileName)
-    await Bun.file(getAvatarPath(oldFileName)).delete()
+    await Bun.file(`${AVATAR_CONFIG.uploadDir}/${oldFileName}`).delete().catch(console.error)
 
   return succeed(fileName)
-}
-
-function getAvatarPath(fileName: string) {
-  return path.join(AVATAR_CONFIG.uploadDir, fileName)
 }
 
 async function convertAvatar(file: File) {
