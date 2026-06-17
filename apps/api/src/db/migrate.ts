@@ -1,7 +1,8 @@
 import { Database } from 'bun:sqlite'
-import { join } from 'node:path'
 
-const MIGRATIONS_DIR = join(import.meta.dir, 'migrations')
+const MIGRATIONS_DIR = process.env.NODE_ENV === 'production'
+                       ? './migrations'
+                       : `${import.meta.dir}/migrations`
 
 export const runMigrations = async (db: Database) => {
   db.run(`
@@ -29,7 +30,7 @@ export const runMigrations = async (db: Database) => {
 
   // Ensure that each successful migration is applied and logged in a single transaction
   for (const filename of pending) {
-    const sql = await Bun.file(join(MIGRATIONS_DIR, filename)).text()
+    const sql = await Bun.file(`${MIGRATIONS_DIR}/${filename}`).text()
     const start = performance.now()
     try {
       db.transaction(() => {

@@ -27,7 +27,7 @@ try {
   await runMigrations(db)
   console.log('[DB] ✅ Database initialised at:', dbPath)
 } catch (error) {
-  console.error('[DB] ❌ Failed to initialise database.')
+  console.error(`[DB] ❌ Failed to initialise database: ${error}`)
   process.exit(1)
 }
 
