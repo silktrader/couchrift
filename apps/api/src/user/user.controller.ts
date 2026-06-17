@@ -9,18 +9,16 @@ export const userController = new Elysia()
     async ({ user, body, status }) => {
       // Update user record in database with new avatar URL
       const result = await addAvatar(body.avatar, user.id)
-
-      if (result.ok) {
-        return status(200, { fileName: result.fileName })
-      }
+      if (result.ok) return { fileName: result.data }
 
       switch (result.error) {
+        case 'WRITE_ERROR':
+          return status(500, { message: 'Write error' })
         case 'CONVERSION_ERROR':
           return status(415, { message: 'Conversion error' })
         case 'UPDATE_ERROR':
           return status(500, { message: 'Update error' })
-        default:
-          return status(500, { message: 'Unknown error' })
+
       }
     }, {
       auth: true,

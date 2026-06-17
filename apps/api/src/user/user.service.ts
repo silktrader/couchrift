@@ -1,7 +1,7 @@
 import { createImageUrl } from '../lib/id'
 import path from 'node:path'
-import { unlink } from 'node:fs/promises'
 import { getUserAvatar, setUserAvatar } from './user.repository'
+import { fail, succeed } from '@couchrift/shared/utilities'
 
 export const AVATAR_CONFIG = {
   maxSize:      2 * 1024 * 1024, // 2MB input limit
@@ -11,23 +11,22 @@ export const AVATAR_CONFIG = {
 } as const
 
 // Update the user's avatar with a new image from an uploaded file.
-export async function addAvatar(file: File, userId: string):
-  Promise<{ ok: true, fileName: string } | { ok: false, error: 'CONVERSION_ERROR' | 'WRITE_ERROR' | 'UPDATE_ERROR' }> {
+export async function addAvatar(file: File, userId: string) {
 
   // Generate an image first
   const conversion = await convertAvatar(file)
-  if (!conversion.ok) return { ok: false, error: 'CONVERSION_ERROR' }
+  if (!conversion.ok) return fail('CONVERSION_ERROR')
 
   // Generate file name and path
   const fileName = `${createImageUrl()}.webp`
-  const filePath = path.join(AVATAR_CONFIG.uploadDir, fileName)
+  const filePath = getAvatarPath(fileName)
 
   // Attempt to write the file
   try {
-    await Bun.write(filePath, conversion.buffer)
+    await Bun.write(filePath, conversion.data)
   } catch (error) {
     console.error('Failed to write avatar file:', error)
-    return { ok: false, error: 'WRITE_ERROR' }
+    return fail('WRITE_ERROR')
   }
 
   // Cache the old avatar's image name for later deletion
@@ -38,20 +37,22 @@ export async function addAvatar(file: File, userId: string):
 
   // On failure to update the table, delete the created file
   if (!update) {
-    unlink(filePath).catch()
-    return { ok: false, error: 'UPDATE_ERROR' }
+    await Bun.file(filePath).delete()
+    return fail('UPDATE_ERROR')
   }
 
   // On success delete the old image
   if (oldFileName)
-    await unlink(path.join(AVATAR_CONFIG.uploadDir, oldFileName)).catch()
+    await Bun.file(getAvatarPath(oldFileName)).delete()
 
-  return { ok: true, fileName }
-
+  return succeed(fileName)
 }
 
-async function convertAvatar(file: File):
-  Promise<{ ok: true; buffer: Buffer } | { ok: false; error: string }> {
+function getAvatarPath(fileName: string) {
+  return path.join(AVATAR_CONFIG.uploadDir, fileName)
+}
+
+async function convertAvatar(file: File) {
 
   try {
     const arrayBuffer = await file.arrayBuffer()
@@ -65,15 +66,9 @@ async function convertAvatar(file: File):
       .webp({ quality: AVATAR_CONFIG.webpQuality })
       .toBuffer()
 
-    return {
-      ok:     true,
-      buffer: webpBuffer
-    }
+    return succeed(webpBuffer)
   } catch (error) {
     console.error('Image conversion error:', error)
-    return {
-      ok:    false,
-      error: 'Invalid image file or unsupported format'
-    }
+    return fail('INVALID_IMAGE')
   }
 }

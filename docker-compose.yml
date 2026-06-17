@@ -12,6 +12,7 @@ services:
       NODE_ENV: production
       # Path is *inside* the container; must match the mounted volume below
       DB_PATH: /app/apps/api/data/couchrift.db
+      UPLOAD_DIR: /app/apps/api/uploads
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       TMDB_API_KEY: ${TMDB_API_KEY}
