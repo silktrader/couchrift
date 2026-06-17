@@ -10,7 +10,7 @@ import { startTmdbIngestion } from './film/tmdb-ingestion.ts'
 import { filmController } from './film/film.controller.ts'
 import { userWsController } from './lounge/user-ws.controller.ts'
 
-const isProd = process.env.NODE_ENV === 'production'
+const isProd = Bun.env.NODE_ENV === 'production'
 
 // Ensure avatar upload directory exists
 try {
@@ -28,8 +28,8 @@ function withSpaFallback(app: Elysia) {
   return isProd
          ? app
            .use(staticPlugin({ assets: assetsDir, prefix: '/', alwaysStatic: true }))
-           .get("/", () => Bun.file(indexHtmlPath))
-           .get("/*", () => Bun.file(indexHtmlPath))
+           .get('/', () => Bun.file(indexHtmlPath))
+           .get('/*', () => Bun.file(indexHtmlPath))
          : app
 }
 

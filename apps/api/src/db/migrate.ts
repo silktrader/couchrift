@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite'
 
-const MIGRATIONS_DIR = process.env.NODE_ENV === 'production'
+const MIGRATIONS_DIR = Bun.env.NODE_ENV === 'production'
                        ? './migrations'
                        : `${import.meta.dir}/migrations`
 

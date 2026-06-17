@@ -6,7 +6,7 @@ import { runMigrations } from './migrate'
 console.log('[DB] ⏳ Initialising database.')
 
 // Attempt to read DB path from .env
-const dbPath = process.env.DB_PATH
+const dbPath = Bun.env.DB_PATH
 if (!dbPath) {
   console.error('[DB] ❌ DB_PATH is not set in `.env`.')
   process.exit(1)

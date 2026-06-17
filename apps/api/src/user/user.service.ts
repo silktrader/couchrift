@@ -3,11 +3,9 @@ import path from 'node:path'
 import { unlink } from 'node:fs/promises'
 import { getUserAvatar, setUserAvatar } from './user.repository'
 
-// Configuration
 export const AVATAR_CONFIG = {
-  maxSize:   2 * 1024 * 1024, // 2MB input limit
-  uploadDir: path.resolve('./uploads/avatars'),
-  // WebP conversion settings
+  maxSize:      2 * 1024 * 1024, // 2MB input limit
+  uploadDir:    Bun.env.UPLOAD_DIR ?? './uploads/avatars',
   webpQuality:  90, // 0-100
   maxDimension: 512 // Max width and height in pixels
 } as const
