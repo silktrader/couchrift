@@ -38,7 +38,7 @@ COPY --from=deps /app/apps/api/node_modules          ./apps/api/node_modules
 COPY --from=deps /app/packages/shared/node_modules   ./packages/shared/node_modules
 
 # Copy ONLY what the API needs to compile
-COPY package.json bun.lock* bun.lockb* ./
+COPY package.json bun.lock* ./
 COPY packages/shared                  ./packages/shared
 COPY apps/api                         ./apps/api
 
