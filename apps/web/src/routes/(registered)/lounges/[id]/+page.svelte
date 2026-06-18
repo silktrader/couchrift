@@ -64,7 +64,7 @@
           <div class="grid grid-cols-4 items-center justify-items-start">
             <Avatar.Root class="size-10 ring-1 justify-self-start">
               {#if participant.image}
-                <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="User Avatar"/>
+                <Avatar.Image src={`/avatars/${participant.image}`} alt="User Avatar"/>
               {/if}
               <Avatar.Fallback>{participant.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
             </Avatar.Root>

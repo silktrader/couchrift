@@ -16,7 +16,7 @@
   {#each users as user (user.id)}
     <Avatar.Root class="size-12 ring-1">
       {#if user.image}
-        <Avatar.Image src={`/uploads/avatars/${user.image}`} alt="User Avatar"/>
+        <Avatar.Image src={`/avatars/${user.image}`} alt="User Avatar"/>
       {/if}
       <Avatar.Fallback>{user.name[0].toLocaleUpperCase()}.</Avatar.Fallback>
     </Avatar.Root>

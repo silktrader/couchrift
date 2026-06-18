@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Item from '$lib/components/ui/item'
-  import type { Swipe } from '@couchrift/shared/schemas/swipes.ts'
   import { ContactRound, X } from '@lucide/svelte/icons'
   import { formatRelativeTime } from '$lib/dates'
   import * as Avatar from '$lib/components/ui/avatar'
@@ -19,7 +18,7 @@
       <Item.Root variant="outline">
         <Item.Media>
           <Avatar.Root class="size-12 ring-2">
-            <Avatar.Image src={`/uploads/avatars/${participant.image}`} alt="Avatar"/>
+            <Avatar.Image src={`/avatars/${participant.image}`} alt="Avatar"/>
             <Avatar.Fallback class="capitalize">{participant.name[0]}.</Avatar.Fallback>
           </Avatar.Root>
         </Item.Media>

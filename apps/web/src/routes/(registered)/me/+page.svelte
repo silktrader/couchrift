@@ -21,7 +21,7 @@
   const userService = getUserContext()
 
   let user = $derived(userService.user)
-  let avatarUrl = $derived(user.image ? `/uploads/avatars/${user.image}` : null)
+  let avatarUrl = $derived(user.image ? `/avatars/${user.image}` : null)
   let canRemoveAvatar = $derived(user.image != null)
   let avatarState: 'ready' | 'saving' | 'saved' = $state('ready')
   let completedTimer: ReturnType<typeof setTimeout> | null = null
@@ -72,7 +72,7 @@
         <div class="relative">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              {#snippet child({props})}
+              {#snippet child({ props })}
                 <Button
                     {...props}
                     class="absolute -right-3 -bottom-1 z-10 rounded-full disabled:opacity-100"

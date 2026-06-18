@@ -19,7 +19,7 @@
   <Button variant="ghost" class="rounded-full" size="icon" href="/me">
     <Avatar.Root class="size-12">
       {#if user.image}
-        <Avatar.Image src={`/uploads/avatars/${user.image}`} class="ring-2" alt="User Avatar"/>
+        <Avatar.Image src={`/avatars/${user.image}`} class="ring-2" alt="User Avatar"/>
       {/if}
       <Avatar.Fallback>
         {user.name[0].toLocaleUpperCase()}
