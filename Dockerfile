@@ -4,7 +4,7 @@ FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 
 # Copy workspace manifests first to maximise layer caching
-COPY package.json bun.lock* bun.lockb* ./
+COPY package.json bun.lock ./
 COPY apps/api/package.json        apps/api/package.json
 COPY apps/web/package.json        apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
@@ -21,7 +21,7 @@ COPY --from=deps /app/apps/web/node_modules   ./apps/web/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 
 # Copy ONLY what the web app needs to build
-COPY package.json bun.lock* bun.lockb* ./
+COPY package.json bun.lock ./
 COPY packages/shared                  ./packages/shared
 COPY apps/web                         ./apps/web
 
@@ -38,16 +38,16 @@ COPY --from=deps /app/apps/api/node_modules          ./apps/api/node_modules
 COPY --from=deps /app/packages/shared/node_modules   ./packages/shared/node_modules
 
 # Copy ONLY what the API needs to compile
-COPY package.json bun.lock* ./
+COPY package.json bun.lock ./
 COPY packages/shared                  ./packages/shared
 COPY apps/api                         ./apps/api
 
-# Compile the Elysia API server into a standalone binary
+# Compile Elysia's server into a standalone binary
 WORKDIR /app/apps/api
 RUN bun build \
   --compile \
-  --minify-whitespace \
-  --minify-syntax \
+  --minify \
+  --target bun-linux-x64 \
   --outfile server \
   src/index.ts
 

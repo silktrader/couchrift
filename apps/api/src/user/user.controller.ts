@@ -30,3 +30,10 @@ export const userController = new Elysia()
         })
       })
     })
+  // Matches any uploaded avatar regardless of when it was created, gets around the /* catchall
+  .get('/avatars/:filename', async ({ params, status }) => {
+    const file = Bun.file(`${AVATAR_CONFIG.uploadDir}/${params.filename}`)
+    if (!(await file.exists()))
+      return status(404)
+    return file
+  })
