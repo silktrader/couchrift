@@ -6,7 +6,7 @@
 ![Bun](https://img.shields.io/badge/Bun-1.3+-000000?logo=bun)
 ![SvelteKit](https://img.shields.io/badge/SvelteKit-5-FF3E00?logo=svelte)
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)
-![GitHub License](https://img.shields.io/github/license/silktrader/couch-rift)
+![GitHub License](https://img.shields.io/github/license/silktrader/couchrift)
 
 > Put an end to discord and quarrels on movie nights. Find a film everyone actually wants to watch!
 
