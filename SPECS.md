@@ -72,7 +72,6 @@ All packages are importable via workspace aliases (e.g. @cri/shared)
 - Eden Treaty
 - Typebox (validation)
 - BetterAuth
-- Sharp (avatar images conversion)
 
 #### SQLite
 
