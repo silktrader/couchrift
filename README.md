@@ -1,3 +1,6 @@
+<img width="1123" height="427" alt="full_logo" src="https://github.com/user-attachments/assets/e6927202-98b0-4973-a4c6-9962f7d9e5c7" />
+
+
 # Couch Rift
 
 ![Bun](https://img.shields.io/badge/Bun-1.3+-000000?logo=bun)
@@ -22,19 +25,33 @@ revealed.
 
 ### Home
 
-*Screenshot*
 
-### Lounge Waiting Room
+<img width="400" alt="Home" src="https://github.com/user-attachments/assets/6c36fd72-9559-4396-b922-3ff62e8a9f8b" />
 
-*Screenshot*
+
+### Lounge Room
+
+
+<img width="400" alt="Ended Lounge" src="https://github.com/user-attachments/assets/b4ef9427-80dc-40bc-9166-89e5879210ce" />
+
+
+<img width="400" alt="Lounge Settings" src="https://github.com/user-attachments/assets/02dd7bcc-0d9d-4cef-bcac-c0bbc6c8fe87" />
+
 
 ### Swiping Films
 
-*Screenshot*
+
+<img width="400" alt="Swipe" src="https://github.com/user-attachments/assets/543192ce-1bd9-4034-a49a-4c2c6d2c2480" />
+
+
+<img width="400" alt="Film Details" src="https://github.com/user-attachments/assets/aec43a58-b84b-4274-96a7-080a41a4a130" />
+
 
 ### Match Found
 
-*Screenshot*
+
+<img width="400" alt="It's a Match!" src="https://github.com/user-attachments/assets/a3c50a28-7f3e-46cf-8ffa-ee18c524d385" />
+
 
 ---
 
@@ -171,14 +188,7 @@ The following configuration keys are required:
 
 ---
 
-## License
-
-*Choose a license (MIT, Apache-2.0, GPL, etc.) and add it here.*
-
----
-
 ### Acknowledgements
 
-* [The Movie Database (TMDB)](https://www.themoviedb.org/) for movie metadata and artwork. This product uses TMDB's
-  API but is not endorsed or certified by TMDB.
+* [The Movie Database (TMDB)](https://www.themoviedb.org/) for movie metadata and artwork.
 
