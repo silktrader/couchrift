@@ -91,6 +91,10 @@
         }
     }
 
+    function handleCase() {
+        shortcode = shortcode.toUpperCase()
+    }
+
     function handleWindowPaste(event: ClipboardEvent) {
         const text = event.clipboardData?.getData('text') ?? ''
 
@@ -102,6 +106,11 @@
         if (shortcode.length === ID_LENGTH.shortcode) {
             void handleJoinLounge()
         }
+    }
+
+    function clearShortcodeError() {
+        shortcode = ''
+        shortcodeError = ''
     }
 
 </script>
@@ -124,7 +133,7 @@
                     <Item.Title>{shortcodeError}</Item.Title>
                 </Item.Content>
                 <Item.Actions>
-                    <Button size="icon-sm" variant="ghost" onclick={() => shortcodeError = ''}>
+                    <Button size="icon-sm" variant="ghost" onclick={clearShortcodeError}>
                         <X/>
                     </Button>
                 </Item.Actions>
@@ -143,7 +152,7 @@
                         onclick={handlePaste}
                         title="Paste from clipboard"
                 >
-                    <ClipboardPaste class="size-5"/>
+                    <ClipboardPaste class="size-4"/>
                 </Button>
 
                 <InputOTP.Root
@@ -151,6 +160,7 @@
                         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
                         inputmode="text"
                         bind:value={shortcode}
+                        onValueChange={handleCase}
                         onComplete={handleJoinLounge}
                 >
                     {#snippet children({cells})}
@@ -171,16 +181,16 @@
 </section>
 
 <!-- Active Lounges -->
-<section class="flex flex-col flex-1 gap-2 items-center">
-    <UnderlineTabs.Root value="active" class="w-full">
+<section class="flex flex-col flex-1 min-h-0 gap-2 items-center">
+    <UnderlineTabs.Root value="active" class="flex min-h-0 w-full flex-1 flex-col">
         <UnderlineTabs.List class="flex justify-center items-center">
             <UnderlineTabs.Trigger class="text-md" value="active">Active</UnderlineTabs.Trigger>
             <UnderlineTabs.Trigger class="text-md" value="ended">Ended</UnderlineTabs.Trigger>
         </UnderlineTabs.List>
 
         <!-- Active lounges -->
-        <UnderlineTabs.Content value="active">
-            <div class="flex flex-1 overflow-y-auto min-h-0 w-full flex-col items-center gap-2 p-4 pb-8">
+        <UnderlineTabs.Content value="active" class="min-h-0 flex-1">
+            <div class="flex h-full min-h-0 w-full flex-col items-center gap-2 overflow-y-auto p-4 pb-8">
                 {#each activeLounges as lounge (lounge.id)}
 
                     <div class="w-full" animate:flip>
@@ -211,8 +221,8 @@
         </UnderlineTabs.Content>
 
         <!-- Ended lounges -->
-        <UnderlineTabs.Content value="ended">
-            <div class="flex flex-1 overflow-y-auto min-h-0 w-full flex-col items-center gap-2 p-4 pb-8">
+        <UnderlineTabs.Content value="ended" class="min-h-0 flex-1">
+            <div class="flex h-full min-h-0 w-full flex-col items-center gap-2 overflow-y-auto p-4 pb-8">
                 {#each endedLounges as lounge (lounge.id)}
 
                     <div class="w-full" animate:flip>

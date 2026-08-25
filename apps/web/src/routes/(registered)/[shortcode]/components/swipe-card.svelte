@@ -209,9 +209,10 @@
       onpointerleave={onPointerUp}
       role="navigation"
   >
+      
     <img
         src={`https://image.tmdb.org/t/p/w500/${film.poster}`}
-        class="absolute inset-0 rounded-3xl object-contain m-auto"
+        class="absolute left-1/2 top-1/2 max-h-full max-w-full -translate-x-1/2 -translate-y-1/2 rounded-3xl object-contain"
         draggable="false"
         alt="Poster"
     />

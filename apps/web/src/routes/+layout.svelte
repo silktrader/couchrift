@@ -1,15 +1,15 @@
 <script lang="ts">
-  import './layout.css'
-  import { Toaster } from '$lib/components/ui/sonner/index.js'
+    import './layout.css'
+    import {Toaster} from '$lib/components/ui/sonner/index.js'
 
-  let { children } = $props()
+    let {children} = $props()
 </script>
 
 <Toaster position="top-center" richColors/>
 
 <div class="h-svh w-full md:flex md:justify-center md:pt-[15vh] md:pb-[15vh]">
-  <main
-      class="
+    <main
+            class="
         flex
         flex-col
         w-full
@@ -24,7 +24,7 @@
       gap-6
       overflow-hidden
     "
-  >
-    {@render children()}
-  </main>
+    >
+        {@render children()}
+    </main>
 </div>
