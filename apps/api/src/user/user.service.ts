@@ -90,8 +90,11 @@ export function getUserData(userId: string, requesterId: string) {
   const response = {...user, relationship: 'none'}
 
   // augment response with friend requests
-  const friendRequest = selectFriendRequestWithTarget(requesterId, userId)
-  if (friendRequest) response.relationship = 'friend_request'
+  const outgoingFriendRequest = selectFriendRequestWithTarget(requesterId, userId)
+  if (outgoingFriendRequest) response.relationship = 'friend_request_sent'
+
+  const incomingFriendRequest = selectFriendRequestWithTarget(userId, requesterId)
+  if (incomingFriendRequest) response.relationship = 'friend_request_received'
 
   // tk add friend status
 

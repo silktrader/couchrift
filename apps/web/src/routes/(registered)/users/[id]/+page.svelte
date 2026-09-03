@@ -47,14 +47,27 @@
 
 
     <section class="flex flex-1 flex-col gap-4 items-center">
-        {#if user.relationship === 'friend_request'}
-            <Item.Root variant="muted" class="w-max">
+        {#if user.relationship === 'friend_request_sent'}
+            <Item.Root variant="muted" size="sm" class="w-max">
                 <Item.Media>
                     <ContactRound class="size-5"/>
                 </Item.Media>
                 <Item.Content>
                     <Item.Title>Friend Request Sent</Item.Title>
                 </Item.Content>
+            </Item.Root>
+        {:else if user.relationship === 'friend_request_received'}
+            <Item.Root variant="outline" size="sm">
+                <Item.Content>
+                    <Item.Title>{user.name} wants to befriend you</Item.Title>
+                    <Item.Description>Friends can easily follow each other's
+                        activities.
+                    </Item.Description>
+                </Item.Content>
+                <Item.Actions>
+                    <Button variant="outline" size="sm">Accept</Button>
+                    <Button variant="destructive" size="sm">Refuse</Button>
+                </Item.Actions>
             </Item.Root>
         {:else}
             <Button variant="default" class="w-1/2" size="lg" onclick={requestFriendship}>Add as Friend</Button>

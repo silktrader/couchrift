@@ -1,53 +1,54 @@
 <script lang="ts">
-    import {Button} from '$lib/components/ui/button'
-    import * as Avatar from '$lib/components/ui/avatar'
-    import * as Card from '$lib/components/ui/card'
-    import * as Form from '$lib/components/ui/form'
-    import Camera from '@lucide/svelte/icons/camera'
-    import {goto} from '$app/navigation'
-    import * as ImageCropper from '$lib/components/ui/image-cropper'
-    import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
-    import EditIcon from '@lucide/svelte/icons/edit'
-    import ImagePlus from '@lucide/svelte/icons/image-plus'
-    import Pencil from '@lucide/svelte/icons/pencil'
-    import Check from '@lucide/svelte/icons/check'
-    import {getFileFromUrl} from '$lib/components/ui/image-cropper'
-    import {fade} from 'svelte/transition'
-    import {Spinner} from '$lib/components/ui/spinner'
-    import {getUserContext} from '$lib/userService.svelte'
-    import {authClient} from '$lib/auth-client'
-    import SubpageHeader from '$lib/components/layout/subpage-header/subpage-header.svelte'
+  import {Button} from '$lib/components/ui/button'
+  import * as Avatar from '$lib/components/ui/avatar'
+  import * as Card from '$lib/components/ui/card'
+  import * as Form from '$lib/components/ui/form'
+  import Camera from '@lucide/svelte/icons/camera'
+  import {goto} from '$app/navigation'
+  import * as ImageCropper from '$lib/components/ui/image-cropper'
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
+  import {Badge} from "$lib/components/ui/badge"
+  import EditIcon from '@lucide/svelte/icons/edit'
+  import ImagePlus from '@lucide/svelte/icons/image-plus'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import Check from '@lucide/svelte/icons/check'
+  import {getFileFromUrl} from '$lib/components/ui/image-cropper'
+  import {fade} from 'svelte/transition'
+  import {Spinner} from '$lib/components/ui/spinner'
+  import {getUserContext} from '$lib/userService.svelte'
+  import {authClient} from '$lib/auth-client'
+  import SubpageHeader from '$lib/components/layout/subpage-header/subpage-header.svelte'
 
-    const userService = getUserContext()
+  const userService = getUserContext()
 
-    let user = $derived(userService.user)
-    let avatarUrl = $derived(user.image ? `/avatars/${user.image}` : null)
-    let canRemoveAvatar = $derived(user.image != null)
-    let avatarState: 'ready' | 'saving' | 'saved' = $state('ready')
-    let completedTimer: ReturnType<typeof setTimeout> | null = null
+  let user = $derived(userService.user)
+  let avatarUrl = $derived(user.image ? `/avatars/${user.image}` : null)
+  let canRemoveAvatar = $derived(user.image != null)
+  let avatarState: 'ready' | 'saving' | 'saved' = $state('ready')
+  let completedTimer: ReturnType<typeof setTimeout> | null = null
 
-    async function signOut(): Promise<void> {
-        await authClient.signOut()
-        await goto('/')
+  async function signOut(): Promise<void> {
+    await authClient.signOut()
+    await goto('/')
+  }
+
+  // Upload the image to the server, on success update the authentication details, reflected by the reactive store
+  async function uploadAvatar(file: File) {
+    avatarState = 'saving'
+    const result = await userService.uploadAvatar(file)
+
+    if (result.type === 'success') {
+      avatarState = 'saved'
+      if (completedTimer) clearTimeout(completedTimer)
+      completedTimer = setTimeout(() => {
+        avatarState = 'ready'
+        completedTimer = null
+      }, 2500)
+      return
+    } else {
+      avatarState = 'ready'
     }
-
-    // Upload the image to the server, on success update the authentication details, reflected by the reactive store
-    async function uploadAvatar(file: File) {
-        avatarState = 'saving'
-        const result = await userService.uploadAvatar(file)
-
-        if (result.type === 'success') {
-            avatarState = 'saved'
-            if (completedTimer) clearTimeout(completedTimer)
-            completedTimer = setTimeout(() => {
-                avatarState = 'ready'
-                completedTimer = null
-            }, 2500)
-            return
-        } else {
-            avatarState = 'ready'
-        }
-    }
+  }
 </script>
 
 <div class="flex flex-col gap-4 m-4 flex-1">
@@ -121,9 +122,15 @@
         <h4 class="text-sm text-muted-foreground">{user.email}</h4>
     </section>
 
-    <section class="flex flex-1 flex-col gap-4 items-center">
+    <section class="flex flex-1 flex-col gap-4 items-center mt-8">
+        {#if userService.friendRequests.length > 0}
+            <Button variant="outline" class="w-2/3" href="/me/friend-requests">
+                Friend Requests
+                <Badge class="size-4">{userService.friendRequests.length}</Badge>
+            </Button>
+        {/if}
         <Button variant="default" class="w-2/3" size="lg">Edit Profile</Button>
-        <Button variant="secondary" class="w-2/3" size="lg" onclick={signOut}>Logout</Button>
+        <Button variant="secondary" class="w-2/3 mt-8" size="lg" onclick={signOut}>Logout</Button>
     </section>
 
     <section class="flex flex-row gap-4 justify-center text-muted-foreground">
