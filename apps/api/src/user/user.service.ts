@@ -1,18 +1,26 @@
-import { createImageUrl } from '../lib/id'
-import { getUserAvatar, setUserAvatar } from './user.repository'
-import { fail, succeed } from '@couchrift/shared/utilities'
-import { mkdirSync } from 'node:fs'
-import { statSync } from 'node:fs'
+import {createImageUrl} from '../lib/id'
+import {
+  userExists,
+  getUserAvatar,
+  getUserDetails,
+  insertFriendRequest,
+  selectFriendship,
+  setUserAvatar, selectUserFriendRequests, selectFriendRequestWithTarget
+} from './user.repository'
+import {fail, succeed} from '@couchrift/shared/utilities'
+import {mkdirSync} from 'node:fs'
+import {statSync} from 'node:fs'
+import type {FriendRequest} from "@couchrift/shared/models/friendRequest.ts";
 
 export const AVATAR_CONFIG = {
-  maxSize:      2 * 1024 * 1024, // 2MB input limit
-  uploadDir:    `${Bun.env.UPLOAD_DIR}/avatars`,
-  webpQuality:  90, // 0-100
+  maxSize: 2 * 1024 * 1024, // 2MB input limit
+  uploadDir: `${Bun.env.UPLOAD_DIR}/avatars`,
+  webpQuality: 90, // 0-100
   maxDimension: 512 // Max width and height in pixels
 } as const
 
 // Attempt to create the avatar directory when missing or fail
-mkdirSync(AVATAR_CONFIG.uploadDir, { recursive: true })
+mkdirSync(AVATAR_CONFIG.uploadDir, {recursive: true})
 if (!statSync(AVATAR_CONFIG.uploadDir))
   throw new Error(`Upload directory missing: ${AVATAR_CONFIG.uploadDir}`)
 
@@ -62,10 +70,10 @@ async function convertAvatar(file: File) {
 
     const webpBuffer = await new Bun.Image(buffer)
       .resize(AVATAR_CONFIG.maxDimension, AVATAR_CONFIG.maxDimension, {
-        fit:                'fill',
+        fit: 'fill',
         withoutEnlargement: true
       })
-      .webp({ quality: AVATAR_CONFIG.webpQuality })
+      .webp({quality: AVATAR_CONFIG.webpQuality})
       .toBuffer()
 
     return succeed(webpBuffer)
@@ -73,4 +81,43 @@ async function convertAvatar(file: File) {
     console.error('Image conversion error:', error)
     return fail('INVALID_IMAGE')
   }
+}
+
+export function getUserData(userId: string, requesterId: string) {
+  const user = getUserDetails(userId)
+  if (!user) return fail('USER_MISSING')
+
+  const response = {...user, relationship: 'none'}
+
+  // augment response with friend requests
+  const friendRequest = selectFriendRequestWithTarget(requesterId, userId)
+  if (friendRequest) response.relationship = 'friend_request'
+
+  // tk add friend status
+
+  return succeed(response)
+}
+
+export function addFriendRequest(requesterId: string, recipientId: string) {
+
+  // ensure the recipient exists and that requester and recipient don't match
+  // there are possible race conditions here
+  if (requesterId === recipientId) return fail('RECIPIENT_INVALID')
+  if (!userExists(recipientId)) return fail('USER_MISSING')
+  if (selectFriendship(requesterId, recipientId)) return fail('RECIPIENT_ALREADY_BEFRIENDED')
+
+  return insertFriendRequest(requesterId, recipientId)
+}
+
+export function getUserFriendRequests(userId: string): FriendRequest[] {
+  return selectUserFriendRequests(userId)
+    .map(r => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      sender: {
+        id: r.requesterId,
+        name: r.name,
+        image: r.image
+      }
+    }))
 }
