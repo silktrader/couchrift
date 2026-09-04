@@ -1,13 +1,21 @@
 import {Elysia, t} from 'elysia'
-import {AVATAR_CONFIG, addAvatar, getUserData, addFriendRequest, getUserFriendRequests} from './user.service'
+import {
+  AVATAR_CONFIG,
+  addAvatar,
+  getUserData,
+  addFriendRequest,
+  getUserFriendRequests,
+  declineFriendRequest
+} from './user.service'
 import {betterAuth} from '../lib/auth-plugin'
-import {UserIdSchema} from "@couchrift/shared/schemas/primitives.ts";
+import {FriendRequestIdSchema, UserIdSchema} from "@couchrift/shared/schemas/primitives.ts";
 
 
 const codes = {
   USER_MISSING: 404,
   RECIPIENT_INVALID: 400,
-  RECIPIENT_ALREADY_BEFRIENDED: 400
+  RECIPIENT_ALREADY_BEFRIENDED: 400,
+  FRIEND_REQUEST_MISSING: 404
 } as const
 
 export const userController = new Elysia()
@@ -61,6 +69,16 @@ export const userController = new Elysia()
     return getUserFriendRequests(user.id)
   }, {
     auth: true
+  })
+
+  // Decline received friend requests
+  .delete('/api/users/me/friend_requests/:id', async ({user, params, status}) => {
+    const result = declineFriendRequest(params.id, user.id)
+    if (result.ok) return status(204)
+    return status(codes[result.error], {type: result.error})
+  }, {
+    auth: true,
+    params: t.Object({id: FriendRequestIdSchema})
   })
 
   // Add a friend request

@@ -5,7 +5,7 @@ import {
   getUserDetails,
   insertFriendRequest,
   selectFriendship,
-  setUserAvatar, selectUserFriendRequests, selectFriendRequestWithTarget
+  setUserAvatar, selectUserFriendRequests, selectFriendRequestWithTarget, deleteFriendRequest
 } from './user.repository'
 import {fail, succeed} from '@couchrift/shared/utilities'
 import {mkdirSync} from 'node:fs'
@@ -93,6 +93,7 @@ export function getUserData(userId: string, requesterId: string) {
   const outgoingFriendRequest = selectFriendRequestWithTarget(requesterId, userId)
   if (outgoingFriendRequest) response.relationship = 'friend_request_sent'
 
+  // friend requests can't be mutual, so state isn't overwritten
   const incomingFriendRequest = selectFriendRequestWithTarget(userId, requesterId)
   if (incomingFriendRequest) response.relationship = 'friend_request_received'
 
@@ -109,6 +110,10 @@ export function addFriendRequest(requesterId: string, recipientId: string) {
   if (!userExists(recipientId)) return fail('USER_MISSING')
   if (selectFriendship(requesterId, recipientId)) return fail('RECIPIENT_ALREADY_BEFRIENDED')
 
+  // prevent mutual requests
+  const inverseRequest = selectFriendRequestWithTarget(recipientId, requesterId)
+  if (inverseRequest) return fail('REQUEST_ALREADY_EXISTS')
+
   return insertFriendRequest(requesterId, recipientId)
 }
 
@@ -123,4 +128,11 @@ export function getUserFriendRequests(userId: string): FriendRequest[] {
         image: r.image
       }
     }))
+}
+
+export function declineFriendRequest(requestId: string, userId: string) {
+
+  return deleteFriendRequest(requestId, userId)
+    ? succeed()
+    : fail('FRIEND_REQUEST_MISSING')
 }

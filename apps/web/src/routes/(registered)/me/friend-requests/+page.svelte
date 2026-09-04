@@ -1,21 +1,32 @@
-<script>
-    import SubpageHeader from "$lib/components/layout/subpage-header/subpage-header.svelte"
-    import * as Alert from "$lib/components/ui/alert";
-    import Info from '@lucide/svelte/icons/info'
-    import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
-    import ThumbsDown from '@lucide/svelte/icons/thumbs-down'
-    import {getUserContext} from "$lib/userService.svelte"
-    import {Button} from "$lib/components/ui/button"
-    import * as Item from "$lib/components/ui/item"
-    import * as Avatar from "$lib/components/ui/avatar"
-    import {formatRelativeTime} from "$lib/dates";
+<script lang="ts">
+  import SubpageHeader from "$lib/components/layout/subpage-header/subpage-header.svelte"
+  import * as Alert from "$lib/components/ui/alert";
+  import Info from '@lucide/svelte/icons/info'
+  import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
+  import ThumbsDown from '@lucide/svelte/icons/thumbs-down'
+  import {getUserContext} from "$lib/userService.svelte"
+  import {Button} from "$lib/components/ui/button"
+  import * as Item from "$lib/components/ui/item"
+  import * as Avatar from "$lib/components/ui/avatar"
+  import {toast} from "svelte-sonner";
+  import {formatRelativeTime} from "$lib/dates";
 
-    const us = getUserContext()
+  const us = getUserContext()
+
+  async function declineRequest(requestId: string, requesterName: string) {
+    const result = await us.declineFriendRequest(requestId)
+    if (result.ok) {
+      toast.success(`${requesterName}'s request was declined.`)
+    } else {
+      toast.error(`Could not decline ${requesterName}'s request: ${result.error}`)
+    }
+  }
 </script>
 
-<div class="flex flex-col gap-4 m-4 flex-1">
+<div class="flex flex-col m-4 flex-1">
     <SubpageHeader title="Friend Requests"/>
-    <Alert.Root>
+
+    <Alert.Root class="mb-8">
         <Info/>
         <Alert.Title>Your friends can ...</Alert.Title>
         <Alert.Description>
@@ -28,7 +39,9 @@
     </Alert.Root>
 
     {#if us.friendRequests.length < 1}
-        No friend requests received.
+        <p class="text-muted-foreground w-full text-center">
+            No friend requests received.
+        </p>
     {:else}
 
         {#each us.friendRequests as request }
@@ -52,7 +65,8 @@
                     <Button variant="default" size="icon">
                         <ThumbsUp/>
                     </Button>
-                    <Button variant="destructive" size="icon">
+                    <Button variant="destructive" size="icon"
+                            onclick={() => declineRequest(request.id, request.sender.name)}>
                         <ThumbsDown/>
                     </Button>
                 </Item.Actions>

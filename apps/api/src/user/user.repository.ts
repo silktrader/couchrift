@@ -56,11 +56,13 @@ export function selectFriendship(firstUser: string, secondUser: string) {
 export function insertFriendRequest(requesterId: string, recipientId: string) {
   const now = Date.now()
   const id = Bun.randomUUIDv7()
-  db.query(`
+  const result = db.query(`
       INSERT INTO friend_requests (id, requesterId, recipientId, createdAt)
       VALUES (@id, @requesterId, @recipientId, @now)
       ON CONFLICT (requesterId, recipientId) DO NOTHING;
   `).run({id, requesterId, recipientId, now})
+
+  if (result.changes === 0) return fail('REQUEST_ALREADY_EXISTS')
   return succeed({id, createdAt: now})
 }
 
@@ -70,9 +72,19 @@ export function selectUserFriendRequests(userId: string) {
     { userId: string }>(`
       SELECT reqs.id, reqs.requesterId, reqs.createdAt, senders.name, senders.image
       FROM friend_requests reqs
-               LEFT JOIN users senders ON requesterId = senders.id
+               JOIN users senders ON requesterId = senders.id
       WHERE recipientId = @userId
   `).all({userId})
+}
+
+export function deleteFriendRequest(requestId: string, userId: string) {
+  const deleted = db.query(`
+      DELETE
+      FROM friend_requests
+      WHERE id = @requestId
+        AND recipientId = @userId
+  `).run({requestId, userId})
+  return deleted.changes > 0
 }
 
 // export function insertFriendship(userIdA: string, userIdB: string, befriendedAt: number) {

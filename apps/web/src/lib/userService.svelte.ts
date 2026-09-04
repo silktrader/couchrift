@@ -87,6 +87,15 @@ export class UserService {
     if (error) return fail(error.value.type)
     return succeed(data)
   }
+
+  async declineFriendRequest(requestId: string) {
+    const {error} = await client.api.users.me.friend_requests({id: requestId}).delete()
+    if (error) return fail(error.value.type)
+
+    // update friend requests store
+    this.friendRequests = this.friendRequests.filter(r => r.id !== requestId)
+    return succeed()
+  }
 }
 
 export const [getUserContext, setUserContext] = createContext<UserService>()
